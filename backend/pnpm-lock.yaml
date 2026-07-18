@@ -142,8 +142,8 @@ importers:
         specifier: 27.1.0
         version: 27.1.0(supports-color@8.1.1)
       postcss:
-        specifier: 8.5.6
-        version: 8.5.6
+        specifier: 8.5.10
+        version: 8.5.10
       prisma:
         specifier: 7.8.0
         version: 7.8.0(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(magicast@0.5.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
@@ -5768,6 +5768,11 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
+  nanoid@3.3.16:
+    resolution: {integrity: sha512-bzlKTyNJ7+LdGIIwy8ijFpIqEQIvafahV7eYykJ8Cvh42EdJeODoJ6gUJXpQJvej1BddH8OqTXZNE/KfbWAu8Q==}
+    engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
+    hasBin: true
+
   nanoid@5.1.6:
     resolution: {integrity: sha512-c7+7RQ+dMB5dPwwCp4ee1/iV/q2P6aK1mTZcfr1BTuVlyW9hJYiMPybJCcnBlQtuSmTIWNeazm/zqNoZSSElBg==}
     engines: {node: ^18 || >=20}
@@ -6196,12 +6201,12 @@ packages:
     resolution: {integrity: sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ==}
     engines: {node: ^10 || ^12 || >=14}
 
-  postcss@8.5.16:
-    resolution: {integrity: sha512-vuwillviilfKZsg0VGj5R/YwwcHx4SLsIOI/7K6mQkWx+l5cUHTjj5g0AasTBcyXsbfTgrwsUNmVUb5xVwyPwg==}
+  postcss@8.5.10:
+    resolution: {integrity: sha512-pMMHxBOZKFU6HgAZ4eyGnwXF/EvPGGqUr0MnZ5+99485wwW41kW91A4LOGxSHhgugZmSChL5AlElNdwlNgcnLQ==}
     engines: {node: ^10 || ^12 || >=14}
 
-  postcss@8.5.6:
-    resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
+  postcss@8.5.16:
+    resolution: {integrity: sha512-vuwillviilfKZsg0VGj5R/YwwcHx4SLsIOI/7K6mQkWx+l5cUHTjj5g0AasTBcyXsbfTgrwsUNmVUb5xVwyPwg==}
     engines: {node: ^10 || ^12 || >=14}
 
   postgres-array@2.0.0:
@@ -7956,7 +7961,7 @@ snapshots:
       '@iarna/toml': 2.2.5
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/exporter-trace-otlp-http': 0.219.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation-http': 0.219.0(@opentelemetry/api@1.9.1)(supports-color@8.1.1)
+      '@opentelemetry/instrumentation-http': 0.219.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/otlp-exporter-base': 0.219.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/resources': 2.8.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/sdk-node': 0.219.0(@opentelemetry/api@1.9.1)
@@ -9053,22 +9058,22 @@ snapshots:
       '@opentelemetry/sdk-trace-base': 2.8.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/semantic-conventions': 1.43.0
 
-  '@opentelemetry/instrumentation-http@0.219.0(@opentelemetry/api@1.9.1)(supports-color@8.1.1)':
+  '@opentelemetry/instrumentation-http@0.219.0(@opentelemetry/api@1.9.1)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/core': 2.8.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.219.0(@opentelemetry/api@1.9.1)(supports-color@8.1.1)
+      '@opentelemetry/instrumentation': 0.219.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/semantic-conventions': 1.43.0
       forwarded-parse: 2.1.2
     transitivePeerDependencies:
       - supports-color
 
-  '@opentelemetry/instrumentation@0.219.0(@opentelemetry/api@1.9.1)(supports-color@8.1.1)':
+  '@opentelemetry/instrumentation@0.219.0(@opentelemetry/api@1.9.1)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.219.0
       import-in-the-middle: 3.3.1
-      require-in-the-middle: 8.0.1(supports-color@8.1.1)
+      require-in-the-middle: 8.0.1
     transitivePeerDependencies:
       - supports-color
 
@@ -9150,7 +9155,7 @@ snapshots:
       '@opentelemetry/exporter-trace-otlp-http': 0.219.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/exporter-trace-otlp-proto': 0.219.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/exporter-zipkin': 2.8.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/instrumentation': 0.219.0(@opentelemetry/api@1.9.1)(supports-color@8.1.1)
+      '@opentelemetry/instrumentation': 0.219.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/otlp-exporter-base': 0.219.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/otlp-grpc-exporter-base': 0.219.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/propagator-b3': 2.8.0(@opentelemetry/api@1.9.1)
@@ -13479,6 +13484,8 @@ snapshots:
 
   nanoid@3.3.15: {}
 
+  nanoid@3.3.16: {}
+
   nanoid@5.1.6: {}
 
   nanostores@1.4.0: {}
@@ -13890,17 +13897,17 @@ snapshots:
 
   postcss@8.4.31:
     dependencies:
-      nanoid: 3.3.15
+      nanoid: 3.3.16
+      picocolors: 1.1.1
+      source-map-js: 1.2.1
+
+  postcss@8.5.10:
+    dependencies:
+      nanoid: 3.3.16
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
   postcss@8.5.16:
-    dependencies:
-      nanoid: 3.3.15
-      picocolors: 1.1.1
-      source-map-js: 1.2.1
-
-  postcss@8.5.6:
     dependencies:
       nanoid: 3.3.15
       picocolors: 1.1.1
@@ -14127,7 +14134,7 @@ snapshots:
 
   require-from-string@2.0.2: {}
 
-  require-in-the-middle@8.0.1(supports-color@8.1.1):
+  require-in-the-middle@8.0.1:
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       module-details-from-path: 1.0.4
