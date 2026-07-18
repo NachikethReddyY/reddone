@@ -7,7 +7,7 @@ import { recordAuditEvent } from "@/server/audit";
 import { canonicalJson } from "@/server/security/canonical-json";
 import { redactSecrets } from "@/policy/secret-guard";
 import { start } from "workflow/api";
-import { ProjectConfigSchema } from "@/contracts";
+import { DEFAULT_WORKFLOW_MODEL, ProjectConfigSchema, type WorkflowModel } from "@/contracts";
 import { assertWorkspaceBudgetAvailable } from "@/server/budget";
 import { getBackendBuildProviderAccounts } from "@/server/backend-providers";
 import { reserveCredits, releaseCreditReservation } from "@/server/credits";
@@ -59,6 +59,7 @@ export async function createProductionRun(input: {
   workspaceId: string;
   projectId: string;
   kind: "research" | "build" | "polish";
+  model?: WorkflowModel;
   specVersionId?: string;
   budgetCeilingMicros: number;
   idempotencyKey: string;
@@ -71,6 +72,7 @@ export async function createProductionRun(input: {
   expectedParentRunVersion?: number;
 }) {
   const db = getDb();
+  const model = input.model ?? DEFAULT_WORKFLOW_MODEL;
   let workflowPurpose = input.workflowPurpose ?? "research";
   let findingId = input.findingId;
   let expectedProjectVersion = input.expectedProjectVersion;
@@ -93,7 +95,8 @@ export async function createProductionRun(input: {
       ?? (input.parentRunId && typeof existingPayload.expectedProjectVersion === "number" ? existingPayload.expectedProjectVersion : undefined);
     const sameRequest =
       existing.projectId === input.projectId &&
-      existing.kind === input.kind.toUpperCase() &&
+       existing.kind === input.kind.toUpperCase() &&
+       existing.model === model &&
       existing.parentRunId === (input.parentRunId ?? null) &&
       existing.budgetCeilingMicros === BigInt(input.budgetCeilingMicros) &&
       existing.scheduleId === (input.scheduleId ?? null) &&
@@ -190,7 +193,8 @@ export async function createProductionRun(input: {
               id: input.parentRunId,
               workspaceId: input.workspaceId,
               projectId: input.projectId,
-              kind: input.kind.toUpperCase() as Uppercase<typeof input.kind>,
+           kind: input.kind.toUpperCase() as Uppercase<typeof input.kind>,
+           model,
               status: { in: ["FAILED", "CANCELED"] },
               ...(input.expectedParentRunVersion !== undefined ? { stateVersion: input.expectedParentRunVersion } : {}),
             },
@@ -297,6 +301,7 @@ export async function createProductionRun(input: {
           scheduleId: input.scheduleId ?? null,
           attempt: input.attempt ?? 1,
           kind: input.kind.toUpperCase() as Uppercase<typeof input.kind>,
+          model,
           status: "QUEUED",
           idempotencyKey: input.idempotencyKey,
           budgetCeilingMicros: ceiling,
@@ -428,12 +433,14 @@ export async function createSpecificationRun(input: {
   findingId: string;
   expectedProjectVersion: number;
   budgetCeilingMicros: number;
+  model?: WorkflowModel;
   idempotencyKey: string;
 }) {
   return createProductionRun({
     workspaceId: input.workspaceId,
     projectId: input.projectId,
     kind: "research",
+    ...(input.model ? { model: input.model } : {}),
     budgetCeilingMicros: input.budgetCeilingMicros,
     idempotencyKey: input.idempotencyKey,
     workflowPurpose: "specification",

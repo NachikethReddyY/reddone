@@ -2,16 +2,17 @@ import "server-only";
 
 import OpenAI from "openai";
 
+import { DEFAULT_WORKFLOW_MODEL } from "@/contracts";
 import { IntegrationError } from "./errors";
+import { inferenceBaseUrl } from "./kimi";
 
-const DEFAULT_KIMI_BASE_URL = "https://api.moonshot.ai/v1";
 const MAX_CONTEXT_BYTES = 24_000;
 const MAX_OUTPUT_CHARS = 8_000;
 
 function conversationClient(apiKey: string) {
   return new OpenAI({
     apiKey,
-    baseURL: process.env.KIMI_BASE_URL ?? DEFAULT_KIMI_BASE_URL,
+    baseURL: inferenceBaseUrl(),
     timeout: 60_000,
     maxRetries: 1,
   });
@@ -33,7 +34,7 @@ export async function generateKimiConversationResponse(input: {
   }
   try {
     const completion = await conversationClient(input.apiKey).chat.completions.create({
-      model: process.env.KIMI_RESEARCH_MODEL ?? "kimi-k2.6",
+      model: DEFAULT_WORKFLOW_MODEL,
       temperature: 0.1,
       max_tokens: 1_200,
       messages: [
@@ -54,7 +55,7 @@ export async function generateKimiConversationResponse(input: {
     if (!content || content.length > MAX_OUTPUT_CHARS) {
       throw new IntegrationError("invalid_response", "Kimi returned an invalid conversation response.", false, 422);
     }
-    return { content, model: completion.model ?? (process.env.KIMI_RESEARCH_MODEL ?? "kimi-k2.6") };
+    return { content, model: completion.model ?? DEFAULT_WORKFLOW_MODEL };
   } catch (error) {
     if (error instanceof IntegrationError) throw error;
     if (error instanceof OpenAI.APIError) {

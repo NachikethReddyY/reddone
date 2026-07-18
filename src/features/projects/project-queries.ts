@@ -15,6 +15,7 @@ import {
   type RunDetail,
   type RunEstimateResponse,
   type RunKind,
+  type WorkflowModel,
 } from "@/contracts";
 import { normalizeProjectView, type ProjectViewModel } from "@/features/project-detail/project-view-data";
 
@@ -156,13 +157,13 @@ export function useRunEventsQuery(runId: string | null, active = false) {
   });
 }
 
-export function useRunEstimateQuery(projectId: string, kind: "research" | "build" | "polish", enabled = true) {
+export function useRunEstimateQuery(projectId: string, kind: "research" | "build" | "polish", model?: WorkflowModel, enabled = true) {
   return useQuery({
-    queryKey: projectQueryKeys.estimate(projectId, kind),
+    queryKey: [...projectQueryKeys.estimate(projectId, kind), model ?? "default"],
     queryFn: () => requestApiData(`/api/v1/projects/${projectId}/run-estimate`, RunEstimateResponseSchema, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ kind }),
+      body: JSON.stringify({ kind, ...(model ? { model } : {}) }),
     }),
     enabled,
     staleTime: 60_000,
@@ -186,6 +187,7 @@ type StartRunInput = {
   kind: Extract<RunKind, "research" | "build" | "polish">;
   projectVersion: number;
   budgetCeilingMicros: number;
+  model?: WorkflowModel;
   specVersionId?: string;
 };
 
@@ -201,6 +203,7 @@ export function useStartRunMutation(projectId: string) {
       },
       body: JSON.stringify({
         kind: input.kind,
+        ...(input.model ? { model: input.model } : {}),
         budgetCeilingMicros: input.budgetCeilingMicros,
         ...(input.specVersionId ? { specVersionId: input.specVersionId } : {}),
       }),

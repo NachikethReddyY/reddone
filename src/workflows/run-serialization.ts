@@ -1,9 +1,10 @@
-import { RunEventPageSchema, RunStateSchema } from "@/contracts";
+import { DEFAULT_WORKFLOW_MODEL, RunEventPageSchema, RunStateSchema } from "@/contracts";
 
 export type PersistedRunState = {
   id: string;
   projectId: string;
   kind: string;
+  model?: string;
   status: string;
   stateVersion: number;
   attempt: number;
@@ -33,6 +34,7 @@ export function serializeRunState(run: PersistedRunState) {
     id: run.id,
     projectId: run.projectId,
     kind: run.kind.toLowerCase(),
+    model: run.model ?? DEFAULT_WORKFLOW_MODEL,
     status: run.status.toLowerCase(),
     stateVersion: run.stateVersion,
     attempt: run.attempt,

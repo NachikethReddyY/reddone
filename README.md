@@ -23,7 +23,7 @@ To validate the checked-in PostgreSQL migration locally, copy `.env.example` to 
 
 For a local live-provider test, keep the secrets only in the gitignored server environment and configure:
 
-- `KIMI_API_KEY` (or the legacy `MOONSHOT_API_KEY`) plus the Kimi model and price variables.
+- `AIAND_API_KEY` to use ai&'s OpenAI-compatible gateway. Each manual research, ProductSpec, or build launch can select `zai-org/glm-5.2` or `moonshotai/kimi-k2.7-code`; selected model IDs are retained with the run and reused on retry. Keep the existing `KIMI_*_COST_MICROS_PER_MILLION` limits configured at least as high as the selected model's ai& rates so the provider-cost ceiling remains conservative. `KIMI_API_KEY` (or legacy `MOONSHOT_API_KEY`) remains supported for the existing Moonshot route.
 - `DAYTONA_API_KEY`, `DAYTONA_API_URL`, and the pinned builder/verifier snapshot names.
 - `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, a descriptive `REDDIT_USER_AGENT`, and the written `REDDIT_APPROVAL_REFERENCE`.
 - `LOCAL_VAULT_DERIVE_FROM_AUTH=true` only on localhost so GitHub/Vercel account tokens do not require cloud OIDC. Production rejects this option.

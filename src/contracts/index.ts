@@ -3,6 +3,7 @@ export * from "./api";
 export * from "./approval";
 export * from "./billing";
 export * from "./common";
+export * from "./model";
 export * from "./connection";
 export * from "./conversation";
 export * from "./project";
