@@ -2,6 +2,7 @@ import "server-only";
 
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { username } from "better-auth/plugins";
 
 import { deliverAuthEmail } from "./auth-email";
 import { redeemHackathonCreditCode } from "./credits";
@@ -58,6 +59,7 @@ function createAuth() {
         }
       : {},
     account: { encryptOAuthTokens: true },
+    plugins: [username({ minUsernameLength: 3, maxUsernameLength: 30 })],
     user: {
       additionalFields: {
         workspaceId: { type: "string", required: true, input: false, returned: true },
@@ -110,6 +112,7 @@ function createAuth() {
       max: 20,
       customRules: {
         "/sign-in/email": { window: 60, max: 3 },
+        "/sign-in/username": { window: 60, max: 3 },
         "/sign-up/email": { window: 15 * 60, max: 3 },
         "/request-password-reset": { window: 15 * 60, max: 3 },
         "/send-verification-email": { window: 15 * 60, max: 3 },

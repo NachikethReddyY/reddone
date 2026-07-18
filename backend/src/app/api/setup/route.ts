@@ -105,6 +105,8 @@ export async function POST(request: Request) {
             id: userId,
             workspaceId: workspace.id,
             name: input.name,
+            username: input.username,
+            displayUsername: input.username,
             email: input.email,
             emailVerified: true,
           },

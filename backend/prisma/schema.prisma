@@ -359,6 +359,8 @@ model User {
   id            String   @id @default(cuid())
   workspaceId   String   @unique @db.Uuid
   name          String   @db.VarChar(120)
+  username      String?  @unique @db.VarChar(30)
+  displayUsername String? @db.VarChar(30)
   email         String   @unique @db.VarChar(320)
   emailVerified Boolean  @default(false)
   image         String?  @db.Text

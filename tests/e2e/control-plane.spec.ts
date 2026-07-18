@@ -182,14 +182,14 @@ for (const width of [1280, 320] as const) {
   }
 }
 
-test("public auth preserves returnTo, continues after email sign-in, and opens account settings", async ({ page, context, baseURL }, testInfo) => {
-  test.skip(testInfo.project.name !== "public", "The proxy and email sign-in flow apply to the public deployment.");
+test("public auth preserves returnTo, continues after username sign-in, and opens account settings", async ({ page, context, baseURL }, testInfo) => {
+  test.skip(testInfo.project.name !== "public", "The proxy and username sign-in flow apply to the public deployment.");
   if (!baseURL) throw new Error("The Playwright project must provide a baseURL.");
   const observed = observeBrowser(page, baseURL);
   let signInPayload: unknown;
 
   await installPublicApiFixtures(page);
-  await page.route("**/api/auth/sign-in/email", async (route) => {
+  await page.route("**/api/auth/sign-in/username", async (route) => {
     signInPayload = route.request().postDataJSON();
     await fulfillJson(
       route,
@@ -204,17 +204,17 @@ test("public auth preserves returnTo, continues after email sign-in, and opens a
   expect(redirected.pathname).toBe("/sign-in");
   expect(redirected.searchParams.get("returnTo")).toBe("/usage?granularity=week");
   await expect(page.getByRole("heading", { level: 1, name: "Sign in to ReDDone." })).toBeVisible();
-  await expect(page.getByLabel("Owner email")).toBeVisible();
+  await expect(page.getByLabel("Username")).toBeVisible();
   await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
 
-  await page.getByLabel("Owner email").fill("owner@reddone.test");
+  await page.getByLabel("Username").fill("owner");
   await page.getByLabel("Password", { exact: true }).fill("correct horse battery staple");
   await page.getByLabel("Keep this browser signed in").check();
   await page.getByRole("button", { name: "Enter control plane" }).click();
 
   await expect(page).toHaveURL(new URL("/usage?granularity=week", baseURL).toString());
   expect(signInPayload).toEqual({
-    email: "owner@reddone.test",
+    username: "owner",
     password: "correct horse battery staple",
     rememberMe: true,
     callbackURL: "/usage?granularity=week",

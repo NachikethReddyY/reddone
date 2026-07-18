@@ -8,6 +8,7 @@ export const OwnerBootstrapInputSchema = z
   .object({
     setupToken: z.string().min(32).max(512),
     name: z.string().trim().min(2).max(120),
+    username: z.string().trim().toLowerCase().min(3).max(30).regex(/^[a-z0-9_.]+$/),
     email: z.string().trim().toLowerCase().email().max(320),
     password: z.string().min(12).max(200),
   })
@@ -42,6 +43,7 @@ export interface OwnerBootstrapRepository {
   consumeTokenAndCreateOwner(input: {
     setupTokenHash: string;
     name: string;
+    username: string;
     email: string;
     password: string;
   }): Promise<OwnerContext | null>;
@@ -104,6 +106,7 @@ export async function bootstrapOwner(
   const owner = await repository.consumeTokenAndCreateOwner({
     setupTokenHash: hashSetupToken(parsed.setupToken),
     name: parsed.name,
+    username: parsed.username,
     email: parsed.email,
     password: parsed.password,
   });
