@@ -1,0 +1,39 @@
+name: Generated App Verification
+
+on:
+  pull_request:
+    paths:
+      - templates/generated-next-app/**
+      - infrastructure/daytona/**
+      - .github/workflows/template-verify.yml
+  push:
+    branches: [main]
+    paths:
+      - templates/generated-next-app/**
+      - infrastructure/daytona/**
+      - .github/workflows/template-verify.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify-template:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.11.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+          cache-dependency-path: templates/generated-next-app/pnpm-lock.yaml
+      - run: pnpm --dir templates/generated-next-app install --frozen-lockfile --ignore-scripts
+      - run: pnpm --dir templates/generated-next-app audit --audit-level=low
+      - run: pnpm --dir templates/generated-next-app typecheck
+      - run: pnpm --dir templates/generated-next-app lint
+      - run: pnpm --dir templates/generated-next-app test
+      - run: pnpm --dir templates/generated-next-app build

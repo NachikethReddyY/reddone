@@ -35,4 +35,17 @@ describe("OAuth state return paths", () => {
       expect(verifyOAuthState(created.state, "github").returnTo).toBe("/connections");
     }
   });
+
+  it("rejects tampered, mismatched, and expired signed states", () => {
+    vi.stubEnv("BETTER_AUTH_SECRET", "oauth-state-test-secret".padEnd(32, "x"));
+    const created = createOAuthState("github");
+    const [encoded, signature] = created.state.split(".");
+
+    expect(() => verifyOAuthState(`${encoded}.${signature}x`, "github")).toThrow(/signature mismatch/i);
+    expect(() => verifyOAuthState(created.state, "vercel")).toThrow(/provider mismatch/i);
+
+    vi.spyOn(Date, "now").mockReturnValue(created.payload.expiresAt + 1);
+    expect(() => verifyOAuthState(created.state, "github")).toThrow(/state expired/i);
+    vi.restoreAllMocks();
+  });
 });

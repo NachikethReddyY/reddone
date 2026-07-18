@@ -29,7 +29,7 @@
   "dependencies": {
     "@daytona/sdk": "0.196.0",
     "@google-cloud/kms": "5.5.0",
-    "@google-cloud/storage": "7.18.0",
+    "@google-cloud/storage": "7.21.0",
     "@octokit/auth-app": "8.2.0",
     "@octokit/rest": "22.0.1",
     "@prisma/adapter-pg": "7.8.0",
@@ -73,12 +73,12 @@
     "eslint": "9.39.1",
     "eslint-config-next": "16.2.10",
     "jsdom": "27.1.0",
-    "postcss": "8.5.11",
+    "postcss": "8.5.19",
     "prisma": "7.8.0",
     "tailwindcss": "4.3.2",
     "tsx": "4.20.6",
     "typescript": "5.9.3",
-    "vercel": "54.21.1",
+    "vercel": "56.3.1",
     "vitest": "4.1.10"
   }
 }
