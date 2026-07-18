@@ -9,6 +9,25 @@ ReDDone is a private, approval-gated control plane that turns authorized market 
 
 The repository ships in **demo mode by default**. Demo mode exercises the same contracts, approval states, and UI without making external calls or pretending mock resources are live.
 
+## How to Use
+
+### Getting Started with ReDDone
+
+![ReDDone Hero](docs/reddone-hero.png)
+
+The ReDDone workflow is designed for evidence-backed product development. Here's how to get started:
+
+1. **Access your account** - Use your invite code to unlock account creation
+2. **Enter your workspace** - Access the main ReDDone console
+3. **Manage approvals** - Review and approve specifications and releases
+4. **Deploy verified builds** - Push approved projects to GitHub and Vercel
+
+![ReDDone Invite Flow](docs/reddone-invite.png)
+
+**Two ways to get started:**
+- **Have an invite?** Redeem your code for immediate access
+- **No invite yet?** Join the waitlist to get early beta access and stay updated on launches
+
 ## Overview
 
 ReDDone serves as an approval-gated control plane for creating, verifying, and deploying applications. It provides:
