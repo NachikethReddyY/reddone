@@ -90,17 +90,19 @@ export function SetupForm() {
   const router = useRouter();
   const [token, setToken] = useState("");
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [invalidFields, setInvalidFields] = useState<Array<"token" | "name" | "email" | "password">>([]);
+  const [invalidFields, setInvalidFields] = useState<Array<"token" | "name" | "username" | "email" | "password">>([]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (token.trim().length < 32) { setInvalidFields(["token"]); setError("Enter the complete one-time setup token from the deployment output."); return; }
     if (name.trim().length < 2) { setInvalidFields(["name"]); setError("Enter the name to display for the workspace owner."); return; }
+    if (!/^[a-zA-Z0-9_.]{3,30}$/.test(username.trim())) { setInvalidFields(["username"]); setError("Use 3–30 letters, numbers, underscores, or periods for the username."); return; }
     if (!email.includes("@")) { setInvalidFields(["email"]); setError("Enter a valid owner email address."); return; }
     if (password.length < 12) { setInvalidFields(["password"]); setError("Use at least 12 characters for the owner password."); return; }
     setLoading(true);
@@ -111,7 +113,7 @@ export function SetupForm() {
         method: "POST",
         headers: { "Content-Type": "application/json", "Idempotency-Key": `setup-${crypto.randomUUID()}` },
         credentials: "same-origin",
-        body: JSON.stringify({ setupToken: token, name: name.trim(), email: email.trim(), password }),
+        body: JSON.stringify({ setupToken: token, name: name.trim(), username: username.trim().toLowerCase(), email: email.trim(), password }),
       });
       if (!response.ok) {
         setError(await getApiError(response, "Unable to create the workspace owner. Verify the setup token and try again."));
@@ -133,6 +135,7 @@ export function SetupForm() {
         <div className="setup-token-note"><Icon name="key" size={20} /><div><strong>Use the hashed setup token once.</strong><p>The token and owner account are consumed atomically, so concurrent attempts cannot create a second owner.</p></div></div>
         <label className="form-field"><span>One-time setup token</span><input aria-describedby={invalidFields.includes("token") ? feedbackIds.setup : undefined} aria-invalid={invalidFields.includes("token") || undefined} autoFocus autoComplete="off" placeholder="Paste token from deployment output" required type="password" value={token} onChange={(event) => { setToken(event.target.value); setError(""); setInvalidFields([]); }} /></label>
         <label className="form-field"><span>Owner name</span><input aria-describedby={invalidFields.includes("name") ? feedbackIds.setup : undefined} aria-invalid={invalidFields.includes("name") || undefined} autoComplete="name" placeholder="Name shown in the workspace" required value={name} onChange={(event) => { setName(event.target.value); setError(""); setInvalidFields([]); }} /></label>
+        <label className="form-field"><span>Username</span><input aria-describedby={invalidFields.includes("username") ? feedbackIds.setup : undefined} aria-invalid={invalidFields.includes("username") || undefined} autoCapitalize="none" autoComplete="username" maxLength={30} minLength={3} placeholder="owner" required spellCheck="false" value={username} onChange={(event) => { setUsername(event.target.value); setError(""); setInvalidFields([]); }} /><small>Use letters, numbers, underscores, or periods.</small></label>
         <label className="form-field"><span>Owner email</span><input aria-describedby={invalidFields.includes("email") ? feedbackIds.setup : undefined} aria-invalid={invalidFields.includes("email") || undefined} autoComplete="email" inputMode="email" placeholder="owner@company.com" required type="email" value={email} onChange={(event) => { setEmail(event.target.value); setError(""); setInvalidFields([]); }} /></label>
         <label className="form-field"><span>Password</span><span className="password-field"><input aria-describedby={invalidFields.includes("password") ? feedbackIds.setup : undefined} aria-invalid={invalidFields.includes("password") || undefined} autoComplete="new-password" placeholder="At least 12 characters" required type={showPassword ? "text" : "password"} value={password} onChange={(event) => { setPassword(event.target.value); setError(""); setInvalidFields([]); }} /><button aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)} type="button"><Icon name="eye" size={18} /></button></span><small>Use a unique password. Password managers and paste are supported.</small></label>
         <Feedback error={error} id={feedbackIds.setup} />
@@ -160,7 +163,7 @@ export function SignInForm({ deploymentMode, returnTo, setupComplete = false, re
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [registrationCode, setRegistrationCode] = useState("");
-  const [invalidFields, setInvalidFields] = useState<Array<"registrationCode" | "email" | "password">>([]);
+  const [invalidFields, setInvalidFields] = useState<Array<"registrationCode" | "username" | "password">>([]);
 
   async function signInWithGitHub() {
     if (registrationCode.trim().length < 12) {
@@ -208,29 +211,32 @@ export function SignInForm({ deploymentMode, returnTo, setupComplete = false, re
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    const email = String(data.get("email") || "").trim();
+    const username = String(data.get("username") || "").trim();
     const password = String(data.get("password") || "");
     const rememberMe = data.get("rememberMe") === "on";
-    const invalid: Array<"email" | "password"> = [];
-    if (!email.includes("@")) invalid.push("email");
+    const invalid: Array<"username" | "password"> = [];
+    if (username.length < 3 || username.length > 320) invalid.push("username");
     if (password.length < 1) invalid.push("password");
     if (invalid.length > 0) {
       setInvalidFields(invalid);
-      setError("Enter the owner email and password for this workspace.");
+      setError("Enter the username and password for this workspace.");
       return;
     }
     setLoading(true);
     setError("");
     setInvalidFields([]);
     try {
-      const response = await fetch("/api/auth/sign-in/email", {
+      const legacyEmail = username.includes("@");
+      const response = await fetch(legacyEmail ? "/api/auth/sign-in/email" : "/api/auth/sign-in/username", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ email, password, rememberMe, callbackURL: destination }),
+        body: JSON.stringify(legacyEmail
+          ? { email: username.toLowerCase(), password, rememberMe, callbackURL: destination }
+          : { username: username.toLowerCase(), password, rememberMe, callbackURL: destination }),
       });
       if (!response.ok) {
-        setError(await getApiError(response, "The owner email or password was not accepted."));
+        setError(await getApiError(response, "The username or password was not accepted."));
         return;
       }
       const payload = await response.json().catch(() => null) as { url?: string } | null;
@@ -246,13 +252,13 @@ export function SignInForm({ deploymentMode, returnTo, setupComplete = false, re
   return (
     <AuthShell view="sign-in">
       <form className="auth-form sign-in-form" onSubmit={submit}>
-        <div className="auth-form-head"><StatusBadge tone={hackathon ? "info" : "success"}>{hackathon ? "Hackathon access" : publicMode ? "Public workspace" : demoMode ? "Product demo" : "Private workspace online"}</StatusBadge><h1>{hackathon ? "Sign in or join the hackathon." : "Sign in to ReDDone."}</h1><p>{hackathon ? "Use your email and password to return to an existing workspace. New participants can enter an event code and continue with GitHub below." : "One owner. One controlled path from evidence to production."}</p></div>
+        <div className="auth-form-head"><StatusBadge tone={hackathon ? "info" : "success"}>{hackathon ? "Hackathon access" : publicMode ? "Public workspace" : demoMode ? "Product demo" : "Private workspace online"}</StatusBadge><h1>{hackathon ? "Sign in or join the hackathon." : "Sign in to ReDDone."}</h1><p>{hackathon ? "Use your username and password to return to an existing workspace. New participants can enter an event code and continue with GitHub below." : "One owner. One controlled path from evidence to production."}</p></div>
         <Feedback success={setupComplete ? "Workspace owner created. Sign in with the credentials you just set." : resetComplete ? "Password reset complete. Sign in with the new password." : undefined} />
-        <label className="form-field"><span>Owner email</span><input aria-describedby={invalidFields.includes("email") ? feedbackIds.signIn : undefined} aria-invalid={invalidFields.includes("email") || undefined} autoFocus autoComplete="email" inputMode="email" name="email" placeholder="owner@company.com" required type="email" onChange={() => { setError(""); setInvalidFields([]); }} /></label>
+        <label className="form-field"><span>Username</span><input aria-describedby={invalidFields.includes("username") ? feedbackIds.signIn : undefined} aria-invalid={invalidFields.includes("username") || undefined} autoCapitalize="none" autoFocus autoComplete="username" name="username" placeholder="Enter your username" required spellCheck="false" onChange={() => { setError(""); setInvalidFields([]); }} /><small>Existing owners can still use their email address.</small></label>
         <label className="form-field"><span>Password</span><input aria-describedby={invalidFields.includes("password") ? feedbackIds.signIn : undefined} aria-invalid={invalidFields.includes("password") || undefined} autoComplete="current-password" name="password" placeholder="Enter your password" required type="password" onChange={() => { setError(""); setInvalidFields([]); }} /></label>
         <div className="sign-in-options"><label><input name="rememberMe" type="checkbox" />Keep this browser signed in</label>{emailDeliveryAvailable ? <Link href={`/forgot-password?returnTo=${encodeURIComponent(destination)}`}>Forgot password?</Link> : null}</div>
         <Feedback error={error} id={feedbackIds.signIn} />
-        <Button className="full-button" kind="primary" icon="arrow-right" disabled={loading} type="submit">{loading ? "Signing in…" : hackathon ? "Sign in with email" : "Enter control plane"}</Button>
+        <Button className="full-button" kind="primary" icon="arrow-right" disabled={loading} type="submit">{loading ? "Signing in…" : hackathon ? "Sign in with username" : "Enter control plane"}</Button>
         {hackathon ? <><div className="auth-divider"><span>New to the hackathon?</span></div><label className="form-field"><span>Hackathon registration code</span><input aria-describedby={invalidFields.includes("registrationCode") ? feedbackIds.signIn : undefined} aria-invalid={invalidFields.includes("registrationCode") || undefined} autoComplete="off" placeholder="Paste the event code" type="password" value={registrationCode} onChange={(event) => { setRegistrationCode(event.target.value); setError(""); setInvalidFields([]); }} /></label><div className="session-note"><Icon name="branch" size={18} /><p>GitHub creates the isolated workspace. Connecting the ReDDone GitHub App later is a separate release authorization.</p></div><Button className="full-button" kind="secondary" icon="branch" disabled={loading} onClick={signInWithGitHub} type="button">{loading ? "Opening GitHub…" : "Continue with GitHub"}</Button></> : null}
         {publicMode ? <p className="auth-legal">New to ReDDone? <Link href="/beta">Request beta access</Link></p> : null}
         <div className="auth-divider"><span>Secure session</span></div>
@@ -268,17 +274,19 @@ export function SignUpForm({ returnTo }: { returnTo?: string }) {
   const destination = safeReturnTo(returnTo);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [invalidFields, setInvalidFields] = useState<Array<"name" | "email" | "password" | "passwordConfirmation">>([]);
+  const [invalidFields, setInvalidFields] = useState<Array<"name" | "username" | "email" | "password" | "passwordConfirmation">>([]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
     const name = String(data.get("name") || "").trim();
+    const username = String(data.get("username") || "").trim().toLowerCase();
     const email = String(data.get("email") || "").trim();
     const password = String(data.get("password") || "");
     const confirmation = String(data.get("passwordConfirmation") || "");
     if (name.length < 2) { setInvalidFields(["name"]); setError("Enter the name to show for the workspace owner."); return; }
+    if (!/^[a-z0-9_.]{3,30}$/.test(username)) { setInvalidFields(["username"]); setError("Use 3–30 letters, numbers, underscores, or periods for the username."); return; }
     if (!email.includes("@")) { setInvalidFields(["email"]); setError("Enter a valid email address."); return; }
     if (password.length < 12) { setInvalidFields(["password"]); setError("Choose a password with at least 12 characters."); return; }
     if (password !== confirmation) { setInvalidFields(["passwordConfirmation"]); setError("The password confirmation does not match."); return; }
@@ -289,20 +297,20 @@ export function SignUpForm({ returnTo }: { returnTo?: string }) {
         method: "POST",
         headers: { "content-type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, username, email, password }),
       });
       if (!ownerResponse.ok) {
         setError(await getApiError(ownerResponse, "Your invite may have expired. Return to beta access and enter it again."));
         return;
       }
-      const signInResponse = await fetch("/api/auth/sign-in/email", {
+      const signInResponse = await fetch("/api/auth/sign-in/username", {
         method: "POST",
         headers: { "content-type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ email, password, rememberMe: true, callbackURL }),
+        body: JSON.stringify({ username, password, rememberMe: true, callbackURL }),
       });
       if (!signInResponse.ok) {
-        setError("Your workspace was created. Sign in with the email and password you just entered.");
+        setError("Your workspace was created. Sign in with the username and password you just entered.");
         return;
       }
       const payload = await signInResponse.json().catch(() => null) as { url?: string } | null;
@@ -321,6 +329,7 @@ export function SignUpForm({ returnTo }: { returnTo?: string }) {
       <form className="auth-form" onSubmit={submit}>
         <div className="auth-form-head"><StatusBadge tone="info">Invite accepted</StatusBadge><h1>Create your owner account.</h1><p>Your private-beta seat is ready. Finish the account before the invite session expires.</p></div>
         <label className="form-field"><span>Owner name</span><input aria-describedby={invalidFields.includes("name") ? feedbackIds.signUp : undefined} aria-invalid={invalidFields.includes("name") || undefined} autoFocus autoComplete="name" name="name" placeholder="Name shown in ReDDone" required onChange={() => { setError(""); setInvalidFields([]); }} /></label>
+        <label className="form-field"><span>Username</span><input aria-describedby={invalidFields.includes("username") ? feedbackIds.signUp : undefined} aria-invalid={invalidFields.includes("username") || undefined} autoCapitalize="none" autoComplete="username" maxLength={30} minLength={3} name="username" placeholder="nora" required spellCheck="false" onChange={() => { setError(""); setInvalidFields([]); }} /><small>Use letters, numbers, underscores, or periods.</small></label>
         <label className="form-field"><span>Email</span><input aria-describedby={invalidFields.includes("email") ? feedbackIds.signUp : undefined} aria-invalid={invalidFields.includes("email") || undefined} autoComplete="email" inputMode="email" name="email" placeholder="you@company.com" required type="email" onChange={() => { setError(""); setInvalidFields([]); }} /></label>
         <label className="form-field"><span>Password</span><input aria-describedby={invalidFields.includes("password") ? feedbackIds.signUp : undefined} aria-invalid={invalidFields.includes("password") || undefined} autoComplete="new-password" name="password" placeholder="At least 12 characters" required type="password" onChange={() => { setError(""); setInvalidFields([]); }} /><small>Password managers and paste are supported.</small></label>
         <label className="form-field"><span>Confirm password</span><input aria-describedby={invalidFields.includes("passwordConfirmation") ? feedbackIds.signUp : undefined} aria-invalid={invalidFields.includes("passwordConfirmation") || undefined} autoComplete="new-password" name="passwordConfirmation" placeholder="Repeat the password" required type="password" onChange={() => { setError(""); setInvalidFields([]); }} /></label>

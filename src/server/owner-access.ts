@@ -16,6 +16,7 @@ export const OwnerAccessRegistrationSchema = z
   .object({
     code: z.string().min(12).max(512),
     name: z.string().trim().min(2).max(120),
+    username: z.string().trim().toLowerCase().min(3).max(30).regex(/^[a-z0-9_.]+$/),
     email: z.string().trim().toLowerCase().email().max(320),
     password: z.string().min(12).max(200),
   })
@@ -32,6 +33,7 @@ export async function registerOwnerWithAccessCode(input: z.input<typeof OwnerAcc
   const parsed = OwnerAccessRegistrationSchema.parse({
     code: input.code,
     name: input.name,
+    username: input.username,
     email: input.email,
     password: input.password,
   });
@@ -40,8 +42,11 @@ export async function registerOwnerWithAccessCode(input: z.input<typeof OwnerAcc
 
   try {
     return await withSerializableTransaction(getDb(), async (tx) => {
-      const existing = await tx.user.findUnique({ where: { email: parsed.email }, select: { id: true } });
-      if (existing) throw new AppError("conflict", "An account already exists for this email. Sign in instead");
+      const existing = await tx.user.findFirst({
+        where: { OR: [{ email: parsed.email }, { username: parsed.username }] },
+        select: { id: true },
+      });
+      if (existing) throw new AppError("conflict", "An account already exists for this username or email. Sign in instead");
 
       const workspace = await tx.workspace.create({
         data: {
@@ -60,6 +65,8 @@ export async function registerOwnerWithAccessCode(input: z.input<typeof OwnerAcc
           id: userId,
           workspaceId: workspace.id,
           name: parsed.name,
+          username: parsed.username,
+          displayUsername: parsed.username,
           email: parsed.email,
           emailVerified: true,
         },
@@ -111,7 +118,7 @@ export async function registerOwnerWithAccessCode(input: z.input<typeof OwnerAcc
   } catch (error) {
     if (error instanceof AppError) throw error;
     if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
-      throw new AppError("conflict", "An account already exists for this email. Sign in instead");
+      throw new AppError("conflict", "An account already exists for this username or email. Sign in instead");
     }
     throw error;
   }

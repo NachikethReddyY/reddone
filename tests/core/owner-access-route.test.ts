@@ -14,6 +14,7 @@ vi.mock("@/server/owner-access", async () => {
     OwnerAccessRegistrationSchema: z.object({
       code: z.string().min(12).max(512),
       name: z.string().trim().min(2).max(120),
+      username: z.string().trim().toLowerCase().min(3).max(30).regex(/^[a-z0-9_.]+$/),
       email: z.string().trim().toLowerCase().email().max(320),
       password: z.string().min(12).max(200),
     }).strict(),
@@ -53,6 +54,7 @@ describe("owner access registration route", () => {
       body: JSON.stringify({
         code: "OWNER-ABCDEF-123456",
         name: "Nora",
+        username: "Nora.Dev",
         email: "OWNER@EXAMPLE.TEST",
         password: "correct horse battery staple",
       }),
@@ -62,6 +64,7 @@ describe("owner access registration route", () => {
     expect(assertTrustedOrigin).toHaveBeenCalledWith("https://console.example.test", "https://console.example.test");
     expect(registerOwnerWithAccessCode).toHaveBeenCalledWith(expect.objectContaining({
       code: "OWNER-ABCDEF-123456",
+      username: "nora.dev",
       email: "owner@example.test",
       requestId: "owner-request-1",
       ipAddress: "203.0.113.7",
@@ -93,6 +96,7 @@ describe("owner access registration route", () => {
       body: JSON.stringify({
         code: "OWNER-ABCDEF-123456",
         name: "Nora",
+        username: "nora",
         email: "owner@example.test",
         password: "correct horse battery staple",
         role: "admin",
