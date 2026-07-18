@@ -43,6 +43,7 @@ const BackendProviderStatusSchema = z.object({
     kimi: z.boolean(),
     daytona: z.boolean(),
     reddit: z.boolean(),
+    redditWebScraper: z.boolean().optional().default(false),
   }).strict(),
   discoveryReady: z.boolean(),
   buildReady: z.boolean(),

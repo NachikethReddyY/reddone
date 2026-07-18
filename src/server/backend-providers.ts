@@ -4,6 +4,7 @@ import { createHmac } from "node:crypto";
 
 import { z } from "zod";
 
+import { OxylabsResidentialCredentialSchema, type OxylabsResidentialCredentials } from "@/integrations/oxylabs-reddit";
 import { RedditStoredCredentialSchema, type RedditCredentials } from "@/integrations/reddit";
 
 import { getDb } from "./db";
@@ -28,6 +29,18 @@ function redditEnvironmentCredentials(): RedditCredentials | null {
   });
   const approvalReference = process.env.REDDIT_APPROVAL_REFERENCE?.trim();
   return parsed.success && approvalReference ? { ...parsed.data, approvalReference } : null;
+}
+
+function oxylabsResidentialEnvironmentCredentials(): OxylabsResidentialCredentials | null {
+  const parsed = OxylabsResidentialCredentialSchema.safeParse({
+    endpoint: process.env.OXYLABS_ENDPOINT,
+    port: process.env.OXYLABS_PORT ?? "7777",
+    username: process.env.OXYLABS_USERNAME,
+    password: process.env.OXYLABS_PASSWORD,
+    userAgent: process.env.REDDIT_USER_AGENT,
+    approvalReference: process.env.REDDIT_APPROVAL_REFERENCE,
+  });
+  return parsed.success ? parsed.data : null;
 }
 
 async function legacyConnection(workspaceId: string, provider: BackendProvider) {
@@ -77,15 +90,25 @@ export async function getBackendRedditCredentials(workspaceId: string): Promise<
   return { ...credential, approvalReference };
 }
 
+/** Oxylabs residential access is backend infrastructure, never a browser connection. */
+export function getBackendRedditResidentialCredentials(): OxylabsResidentialCredentials {
+  const configured = oxylabsResidentialEnvironmentCredentials();
+  if (!configured) {
+    throw new Error("Oxylabs residential Reddit scraping requires OXYLABS credentials, a descriptive REDDIT_USER_AGENT, and a written Reddit approval reference.");
+  }
+  return configured;
+}
+
 export async function getBackendProviderReadiness(workspaceId: string) {
   const environment = {
     kimi: Boolean(kimiEnvironmentKey()),
     daytona: Boolean(daytonaEnvironmentKey()),
     reddit: Boolean(redditEnvironmentCredentials()),
+    redditWebScraper: Boolean(oxylabsResidentialEnvironmentCredentials()),
   };
-  const missing = (Object.entries(environment) as Array<[BackendProvider, boolean]>)
-    .filter(([, ready]) => !ready)
-    .map(([provider]) => provider.toUpperCase() as Uppercase<BackendProvider>);
+  const missing = (["kimi", "daytona", "reddit"] as const)
+    .filter((provider) => !environment[provider])
+    .map((provider) => provider.toUpperCase() as Uppercase<BackendProvider>);
   const legacy = missing.length
     ? await getDb().providerConnection.findMany({
       where: { workspaceId, provider: { in: missing }, health: "HEALTHY", activeSecretVersionId: { not: null } },
@@ -100,6 +123,7 @@ export async function getBackendProviderReadiness(workspaceId: string) {
     kimi: environment.kimi || legacyReady.get("kimi") === true,
     daytona: environment.daytona || legacyReady.get("daytona") === true,
     reddit: environment.reddit || legacyReady.get("reddit") === true,
+    redditWebScraper: environment.redditWebScraper,
   };
   return {
     providers: ready,
@@ -143,7 +167,7 @@ export async function getBackendBuildProviderAccounts(workspaceId: string) {
 }
 
 export const BackendProviderReadinessSchema = z.object({
-  providers: z.object({ kimi: z.boolean(), daytona: z.boolean(), reddit: z.boolean() }).strict(),
+  providers: z.object({ kimi: z.boolean(), daytona: z.boolean(), reddit: z.boolean(), redditWebScraper: z.boolean() }).strict(),
   discoveryReady: z.boolean(),
   buildReady: z.boolean(),
 }).strict();

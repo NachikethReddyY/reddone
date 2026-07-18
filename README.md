@@ -25,10 +25,13 @@ For a local live-provider test, keep the secrets only in the gitignored server e
 
 - `KIMI_API_KEY` (or the legacy `MOONSHOT_API_KEY`) plus the Kimi model and price variables.
 - `DAYTONA_API_KEY`, `DAYTONA_API_URL`, and the pinned builder/verifier snapshot names.
-- `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, a descriptive `REDDIT_USER_AGENT`, and the written `REDDIT_APPROVAL_REFERENCE`.
+- `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, a descriptive `REDDIT_USER_AGENT`, and the written `REDDIT_APPROVAL_REFERENCE` for the approved OAuth browse endpoints.
+- `OXYLABS_ENDPOINT`, `OXYLABS_PORT`, `OXYLABS_USERNAME`, and `OXYLABS_PASSWORD` for the approved residential-proxy Reddit web collector. The collector also requires the same descriptive `REDDIT_USER_AGENT` and written `REDDIT_APPROVAL_REFERENCE`; all values remain server-only.
 - `LOCAL_VAULT_DERIVE_FROM_AUTH=true` only on localhost so GitHub/Vercel account tokens do not require cloud OIDC. Production rejects this option.
 
-The **Connections** screen is only for owner-authorized GitHub and Vercel accounts. Kimi, Daytona, and Reddit are backend infrastructure and never have browser credential forms. The UI sees only redacted readiness booleans from `/api/v1/providers/status`.
+The **Connections** screen is only for owner-authorized GitHub and Vercel accounts. Kimi, Daytona, Reddit OAuth, and Oxylabs residential proxy access are backend infrastructure and never have browser credential forms. The UI sees only redacted readiness booleans from `/api/v1/providers/status`.
+
+When Oxylabs residential collection is configured, the Live Reddit web scrape source in the new-project flow lets an owner choose one subreddit, optional keywords, post sort, time frame, document cap, and one to eight bounded collection agents. The page cursor is collected serially, then the agents independently re-read their assigned public post pages through the proxy. The exact scope is stored with the project and reused by scheduled research; it cannot be supplied from the browser at run time.
 
 ## Private production activation
 
@@ -38,7 +41,7 @@ Private mode is intentionally fail-closed. Before setting `APP_MODE=private`:
 2. Configure the Google Cloud KMS/artifact vault with a Vercel OIDC subject narrowed to the production project and environment.
 3. Build and publish the pinned Daytona snapshot from `infrastructure/daytona/Dockerfile` after a human security review.
 4. Register the least-privilege GitHub App and Vercel integration, configure signed webhooks, and test isolated accounts through **Connections**.
-5. Configure Kimi, Daytona, and Reddit as server-only environment secrets. Record a separate Reddit written-authorization reference before enabling any live Reddit source.
+5. Configure Kimi, Daytona, Reddit, and—when using website collection—Oxylabs as server-only environment secrets. Record a separate Reddit written-authorization reference before enabling any live Reddit source, and use the collector only for access permitted by your Reddit and Oxylabs agreements.
 6. Configure `PREVIEW_ORIGIN` on a dedicated HTTPS, cookie-less hostname (different from the console/auth origin), set an independent `PREVIEW_SIGNING_KEY`, and apply an edge rate limit to `/preview/*`.
 7. Set independent verification-signing credentials and current positive Kimi input/output price rates; live mode refuses unpriced provider calls.
 8. Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build`, then complete the threat-model and brand/legal gates documented under `docs/`.
