@@ -196,6 +196,7 @@ export async function getUsageReport(workspaceId: string, query: ResolvedUsageQu
     where: {
       workspaceId,
       provider: "KIMI",
+      runId: { not: null },
       occurredAt: { gte: new Date(query.from), lt: new Date(query.to) },
       ...(query.projectId ? { projectId: query.projectId } : {}),
       ...(query.operation ? { operation: query.operation } : {}),
@@ -205,7 +206,10 @@ export async function getUsageReport(workspaceId: string, query: ResolvedUsageQu
     include: { run: { include: { project: { select: { name: true } } } } },
     orderBy: { occurredAt: "asc" },
   });
-  return aggregateUsageReport({ entries, query, source: "actual" });
+  // The legacy usage dashboard remains run-oriented; conversation usage is stored
+  // separately by the same ledger and will be exposed through its workspace view.
+  const runEntries = entries.filter((entry) => entry.runId !== null && entry.run !== null) as UsageEntryLike[];
+  return aggregateUsageReport({ entries: runEntries, query, source: "actual" });
 }
 
 export function getDemoUsageReport(query: ResolvedUsageQuery) {

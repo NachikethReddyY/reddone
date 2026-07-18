@@ -851,7 +851,8 @@ model BudgetReservation {
   id             String       @id @default(uuid()) @db.Uuid
   workspaceId    String       @db.Uuid
   projectId      String       @db.Uuid
-  runId          String       @db.Uuid
+  runId          String?      @db.Uuid
+  turnId         String?      @db.Uuid
   provider       Provider
   idempotencyKey String       @db.VarChar(200)
   reservedMicros BigInt
@@ -862,8 +863,9 @@ model BudgetReservation {
   releasedAt     DateTime?    @db.Timestamptz(6)
   createdAt      DateTime     @default(now()) @db.Timestamptz(6)
 
-  workspace Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  run       WorkflowRun @relation(fields: [workspaceId, projectId, runId], references: [workspaceId, projectId, id], onDelete: Cascade)
+  workspace Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  run       WorkflowRun?      @relation(fields: [workspaceId, projectId, runId], references: [workspaceId, projectId, id], onDelete: Cascade)
+  turn      ConversationTurn? @relation(fields: [workspaceId, projectId, turnId], references: [workspaceId, projectId, id], onDelete: Cascade)
 
   @@unique([workspaceId, idempotencyKey])
   @@index([workspaceId, status, expiresAt])
@@ -874,7 +876,8 @@ model UsageLedger {
   id                         String   @id @default(uuid()) @db.Uuid
   workspaceId                String   @db.Uuid
   projectId                  String   @db.Uuid
-  runId                      String   @db.Uuid
+  runId                      String?  @db.Uuid
+  turnId                     String?  @db.Uuid
   provider                   Provider
   externalUsageId            String?  @db.VarChar(300)
   model                      String   @db.VarChar(120)
@@ -889,8 +892,9 @@ model UsageLedger {
   occurredAt                 DateTime @db.Timestamptz(6)
   createdAt                  DateTime @default(now()) @db.Timestamptz(6)
 
-  workspace Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  run       WorkflowRun @relation(fields: [workspaceId, projectId, runId], references: [workspaceId, projectId, id], onDelete: Cascade)
+  workspace Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  run       WorkflowRun?      @relation(fields: [workspaceId, projectId, runId], references: [workspaceId, projectId, id], onDelete: Cascade)
+  turn      ConversationTurn? @relation(fields: [workspaceId, projectId, turnId], references: [workspaceId, projectId, id], onDelete: Cascade)
 
   @@unique([workspaceId, provider, externalUsageId])
   @@index([workspaceId, occurredAt])
@@ -1208,7 +1212,8 @@ model CreditReservation {
   id                     String                  @id @default(uuid()) @db.Uuid
   workspaceId            String                  @db.Uuid
   projectId              String                  @db.Uuid
-  runId                  String                  @db.Uuid
+  runId                  String?                 @db.Uuid
+  turnId                 String?                 @db.Uuid
   runAttempt             Int
   creditAccountId        String                  @db.Uuid
   includedSourcePeriodId String?                 @db.Uuid
@@ -1226,7 +1231,8 @@ model CreditReservation {
   updatedAt              DateTime                @updatedAt @db.Timestamptz(6)
 
   workspace            Workspace                        @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  run                  WorkflowRun                      @relation(fields: [workspaceId, projectId, runId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  run                  WorkflowRun?                     @relation(fields: [workspaceId, projectId, runId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  turn                 ConversationTurn?                @relation(fields: [workspaceId, projectId, turnId], references: [workspaceId, projectId, id], onDelete: Restrict)
   creditAccount        CreditAccount                    @relation(fields: [workspaceId, creditAccountId], references: [workspaceId, id], onDelete: Restrict)
   includedSourcePeriod BillingSubscriptionPeriod?       @relation("IncludedReservationPeriod", fields: [workspaceId, includedSourcePeriodId], references: [workspaceId, id], onDelete: Restrict)
   lotAllocations       CreditReservationLotAllocation[]
@@ -1234,6 +1240,7 @@ model CreditReservation {
 
   @@unique([workspaceId, id])
   @@unique([runId, runAttempt])
+  @@unique([turnId])
   @@index([workspaceId, status, heldAt])
   @@map("credit_reservations")
 }
@@ -1498,9 +1505,12 @@ model ConversationTurn {
   updatedAt           DateTime               @updatedAt @db.Timestamptz(6)
 
   conversation ProjectConversation      @relation(fields: [workspaceId, projectId, conversationId], references: [workspaceId, projectId, id], onDelete: Cascade)
-  events       ConversationTurnEvent[]
-  actions      ConversationAction[]
-  lease        ConversationTurnLease?
+  events              ConversationTurnEvent[]
+  actions             ConversationAction[]
+  lease               ConversationTurnLease?
+  budgetReservations  BudgetReservation[]
+  usageEntries        UsageLedger[]
+  creditReservations  CreditReservation[]
 
   @@unique([workspaceId, idempotencyKey])
   @@unique([workspaceId, projectId, id])

@@ -5,7 +5,8 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { Icon } from "@/components/icons";
-import { Button, EmptyState, StatusBadge } from "@/components/ui";
+import { Button, EmptyState, Sheet, StatusBadge } from "@/components/ui";
+import { ProjectSecretsSettings } from "@/features/project-detail/project-secrets-settings";
 import { detectSecretLikeInput } from "@/policy/secret-guard";
 import { useProjectQuery } from "@/features/projects/project-queries";
 
@@ -31,6 +32,7 @@ export function ProjectConversationWorkspace({ projectId }: { projectId: string 
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [secretsOpen, setSecretsOpen] = useState(false);
   const queryClient = useQueryClient();
   const projectVersion = project.data?.optimisticVersion ?? null;
   const createConversation = useCreateConversationMutation(projectId, projectVersion);
@@ -125,8 +127,10 @@ export function ProjectConversationWorkspace({ projectId }: { projectId: string 
         <div className="context-card"><span><Icon name="activity" size={18} /></span><div><small>Lifecycle</small><strong>{project.data?.status.replaceAll("_", " ") ?? "Loading"}</strong><Link href={`/projects/${projectId}/overview`}>Open overview</Link></div></div>
         <div className="context-card"><span><Icon name="approval" size={18} /></span><div><small>Pending approvals</small><strong>{project.data?.pendingApproval ? "Review required" : "None pending"}</strong><Link href="/approvals">Open approvals</Link></div></div>
         <div className="context-card"><span><Icon name="terminal" size={18} /></span><div><small>Latest workflow</small><strong>{project.data?.runs[0]?.status ?? "No runs"}</strong><Link href={`/projects/${projectId}/builds`}>Open builds</Link></div></div>
+        <Button icon="key" onClick={() => setSecretsOpen(true)}>Project secrets</Button>
         <div className="context-guard"><Icon name="warning" size={18} /><p>Secrets stay write-only and approvals stay in their dedicated flow. Chat remains a bounded control surface.</p></div>
       </aside>
+      {secretsOpen && <Sheet open={secretsOpen} onOpenChange={setSecretsOpen} side="right" title="Project secrets" description="Write-only, versioned runtime secrets. Values are never added to chat." ><ProjectSecretsSettings projectId={projectId} /></Sheet>}
     </div>
   );
 }
