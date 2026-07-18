@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+cd /workspace
+if /usr/local/bin/pnpm licenses list --prod --json | grep -Eiq 'AGPL|GPL-3'; then
+  echo "denied runtime license detected"
+  exit 1
+fi
+echo "runtime license policy passed"

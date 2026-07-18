@@ -1,0 +1,36 @@
+#!/bin/sh
+set -eu
+cd /workspace
+
+sha256sum -c /opt/reddone/immutable.sha256 >/dev/null
+
+for protected_dir in . node_modules tests src src/app src/components public; do
+  if [ -w "$protected_dir" ]; then
+    echo "protected directory became writable: $protected_dir"
+    exit 1
+  fi
+done
+
+while IFS= read -r manifest_line; do
+  protected_path=${manifest_line#*  }
+  if [ -L "$protected_path" ] || [ "$(stat -c '%U' "$protected_path")" != "root" ]; then
+    echo "protected path ownership or file type changed: $protected_path"
+    exit 1
+  fi
+done < /opt/reddone/immutable.sha256
+
+for sealed_dir in src/app/generated src/components/generated src/content public/generated; do
+  if [ ! -d "$sealed_dir" ] || [ -L "$sealed_dir" ] || [ -w "$sealed_dir" ] || [ "$(stat -c '%U' "$sealed_dir")" != "root" ]; then
+    echo "generated source is not sealed: $sealed_dir"
+    exit 1
+  fi
+done
+
+for writable_dir in .next .vercel .reddone-runtime; do
+  if [ ! -d "$writable_dir" ] || [ -L "$writable_dir" ] || [ ! -w "$writable_dir" ]; then
+    echo "dedicated runtime directory is unavailable: $writable_dir"
+    exit 1
+  fi
+done
+
+echo "trusted toolchain ownership and hashes passed"

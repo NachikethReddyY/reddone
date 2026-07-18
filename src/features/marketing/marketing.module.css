@@ -1,0 +1,385 @@
+.site {
+  min-height: 100dvh;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 83% 8%, color-mix(in srgb, var(--action) 12%, transparent), transparent 30rem),
+    linear-gradient(180deg, var(--canvas-subtle), var(--canvas) 28rem);
+}
+
+.header,
+.footer,
+.hero,
+.workflowSection,
+.safetySection,
+.pricingPreview,
+.finalCta,
+.pricingPage {
+  width: min(1920px, calc(100% - clamp(32px, 4vw, 80px)));
+  margin-inline: auto;
+}
+
+.header {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  min-height: 80px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 32px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  background: color-mix(in srgb, var(--canvas) 84%, transparent);
+  backdrop-filter: blur(20px);
+}
+
+.wordmark {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 11px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.wordmark > span {
+  display: grid;
+  gap: 1px;
+}
+
+.wordmark strong {
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: -.025em;
+}
+
+.wordmark small {
+  color: var(--text-tertiary);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.nav,
+.headerActions,
+.footer nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav a,
+.footer a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 16px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.nav a:hover,
+.footer a:hover { color: var(--text); }
+
+.nav .inviteLink {
+  color: var(--action);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+.headerActions { justify-content: flex-end; }
+
+.headerCta,
+.signInLink,
+.primaryCta,
+.secondaryCta {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius);
+  padding: 0 17px;
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: none;
+  transition: transform 150ms var(--spring), background 180ms ease, border-color 180ms ease;
+}
+
+.signInLink {
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  background: var(--control);
+}
+
+.signInLink:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+  background: var(--control-hover);
+  transform: translateY(-1px);
+}
+
+.signInLink:active { transform: scale(.97); }
+
+.headerCta,
+.primaryCta {
+  color: var(--action-foreground);
+  background: var(--action-button);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--action) 20%, transparent);
+}
+
+.headerCta:hover,
+.primaryCta:hover { background: var(--action-button-hover); transform: translateY(-1px); }
+.headerCta:active,
+.primaryCta:active { background: var(--action-button-active); }
+.headerCta:active,
+.primaryCta:active,
+.secondaryCta:active { transform: scale(.97); }
+
+.hero {
+  min-height: min(780px, calc(100dvh - 76px));
+  display: grid;
+  grid-template-columns: minmax(0, .95fr) minmax(430px, 1.05fr);
+  align-items: center;
+  gap: clamp(48px, 6vw, 120px);
+  padding-block: 88px 96px;
+}
+
+.heroCopy { max-width: 760px; }
+.kicker,
+.sectionIntro > p,
+.safetyStatement > p,
+.catalogHeading p,
+.pricingAction p,
+.finalCta p {
+  margin: 0 0 16px;
+  color: var(--action);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.hero h1,
+.pricingHero h1 {
+  max-width: 900px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(3.25rem, 7vw, 6.6rem);
+  line-height: .93;
+  letter-spacing: -.065em;
+  text-wrap: balance;
+}
+
+.lede,
+.pricingHero > p:last-child {
+  max-width: 680px;
+  margin: 28px 0 0;
+  color: var(--text-secondary);
+  font-size: clamp(1.05rem, 1.4vw, 1.25rem);
+  line-height: 1.65;
+}
+
+.heroActions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+.secondaryCta { border: 1px solid var(--border-strong); color: var(--text); background: var(--surface-1); }
+.secondaryCta:hover { border-color: var(--action); background: var(--action-faint); }
+.modeNote { display: flex; align-items: center; gap: 8px; margin: 18px 0 0; color: var(--text-tertiary); font-size: 13px; }
+.modeNote svg { color: var(--action); }
+
+.artifactBoard {
+  position: relative;
+  min-height: 590px;
+  isolation: isolate;
+}
+
+.artifactBoard::before {
+  position: absolute;
+  z-index: -1;
+  inset: 7% 5% 2% 10%;
+  border: 1px solid var(--line);
+  border-radius: 50% 42% 46% 54%;
+  background: color-mix(in srgb, var(--surface-1) 70%, transparent);
+  content: "";
+  transform: rotate(-7deg);
+}
+
+.artifactBoard article {
+  position: absolute;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+  box-shadow: var(--shadow-float);
+  backdrop-filter: blur(16px);
+}
+
+.evidenceArtifact { top: 2%; left: 0; width: 80%; padding: 24px; border-radius: 22px 22px 9px 22px; transform: rotate(-2deg); }
+.specArtifact { top: 34%; right: 0; width: 78%; padding: 25px; border-radius: 24px 10px 24px 24px; transform: rotate(2deg); }
+.releaseArtifact { bottom: 0; left: 7%; width: 72%; padding: 22px; border-radius: 10px 24px 24px 24px; transform: rotate(-1deg); }
+.artifactMeta { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 11px; letter-spacing: .035em; text-transform: uppercase; }
+.artifactMeta svg { color: var(--action); }
+.evidenceArtifact blockquote { margin: 24px 0 19px; font-family: var(--font-display); font-size: 21px; font-weight: 650; line-height: 1.35; letter-spacing: -.025em; }
+.evidenceArtifact p { margin: 0; color: var(--text-secondary); font-size: 13px; }
+.evidenceArtifact strong { color: var(--text); }
+.specArtifact dl { display: grid; gap: 15px; margin: 22px 0 0; }
+.specArtifact dl div { display: grid; grid-template-columns: 90px 1fr; gap: 16px; border-top: 1px solid var(--line); padding-top: 13px; }
+.specArtifact dt { color: var(--text-tertiary); font-size: 12px; }
+.specArtifact dd { margin: 0; font-size: 14px; font-weight: 650; }
+.mono { font-family: var(--font-mono); }
+.releaseLine { display: flex; align-items: center; gap: 10px; margin-top: 16px; color: var(--text-secondary); font-size: 13px; }
+.releaseLine svg { color: var(--success); }
+
+.workflowSection,
+.pricingPreview { padding-block: 120px; }
+.sectionIntro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .6fr); gap: 24px 70px; align-items: end; }
+.sectionIntro > p { grid-column: 1 / -1; margin-bottom: 0; }
+.sectionIntro h2,
+.safetyStatement h2,
+.catalogHeading h2,
+.finalCta h2,
+.pricingAction h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 4.5vw, 4.6rem);
+  line-height: 1;
+  letter-spacing: -.055em;
+  text-wrap: balance;
+}
+.sectionIntro > span { color: var(--text-secondary); font-size: 17px; line-height: 1.65; }
+
+.workflowList { margin: 68px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--border-strong); }
+.workflowList li { display: grid; grid-template-columns: 56px 44px minmax(0, 1fr); align-items: start; gap: 20px; padding: 30px 0; border-bottom: 1px solid var(--line); }
+.workflowList li > svg { color: var(--action); }
+.stepIndex { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 12px; }
+.workflowList h3 { margin: -4px 0 8px; font-family: var(--font-display); font-size: 24px; letter-spacing: -.025em; }
+.workflowList p { max-width: 690px; margin: 0; color: var(--text-secondary); font-size: 16px; line-height: 1.6; }
+
+.safetySection {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(450px, 1.1fr);
+  gap: 80px;
+  padding-block: 120px;
+  border-block: 1px solid var(--border);
+}
+.safetyStatement { position: sticky; top: 120px; align-self: start; }
+.safetyDetails { display: grid; }
+.safetyDetails article { display: grid; grid-template-columns: 42px 1fr; gap: 3px 14px; padding: 26px 0; border-bottom: 1px solid var(--line); }
+.safetyDetails article:first-child { padding-top: 0; }
+.safetyDetails svg { grid-row: 1 / 3; color: var(--action); }
+.safetyDetails h3 { margin: 0; font-family: var(--font-display); font-size: 20px; }
+.safetyDetails p { margin: 7px 0 0; color: var(--text-secondary); line-height: 1.6; }
+
+.pricingRows { margin-top: 56px; border-top: 1px solid var(--border-strong); }
+.pricingRows article { min-height: 112px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 24px; padding: 24px 18px; border-bottom: 1px solid var(--line); }
+.pricingRows article > div { display: grid; gap: 6px; }
+.pricingRows strong { font-family: var(--font-display); font-size: 24px; letter-spacing: -.025em; }
+.pricingRows article > div span { color: var(--text-secondary); font-size: 14px; }
+.pricingRows article > p { margin: 0; font-family: var(--font-display); font-size: 28px; font-weight: 750; letter-spacing: -.04em; }
+.pricingRows article > p span { color: var(--text-tertiary); font-family: var(--font-body); font-size: 13px; font-weight: 500; letter-spacing: 0; }
+.featuredPlan { background: var(--action-faint); box-shadow: inset 3px 0 var(--action); }
+.compactPricing article { min-height: 92px; }
+.creditClarifier { display: flex; align-items: flex-start; gap: 12px; margin-top: 30px; padding: 20px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface-1); }
+.creditClarifier svg { flex: 0 0 auto; margin-top: 2px; color: var(--action); }
+.creditClarifier p { margin: 0; color: var(--text-secondary); line-height: 1.55; }
+.creditClarifier strong { color: var(--text); }
+.textCta { min-height: 44px; width: fit-content; display: inline-flex; align-items: center; gap: 7px; margin-top: 22px; color: var(--action); font-weight: 750; text-decoration: none; }
+
+.finalCta,
+.pricingAction { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 24px; margin-block: 50px 120px; padding: clamp(28px, 5vw, 58px); border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--surface-1); box-shadow: var(--shadow-float); }
+.finalCta p,
+.pricingAction p { margin-bottom: 9px; }
+.finalCta h2,
+.pricingAction h2 { font-size: clamp(1.8rem, 3.5vw, 3.1rem); }
+
+.footer { min-height: 150px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-top: 1px solid var(--border); }
+.footer > div { display: flex; align-items: center; gap: 12px; }
+.footer p { display: grid; gap: 3px; margin: 0; }
+.footer p span { color: var(--text-tertiary); font-size: 12px; }
+
+.pricingPage { padding-top: 96px; }
+.pricingHero { max-width: 950px; padding-block: 30px 100px; }
+.catalogSection { padding-block: 80px; border-top: 1px solid var(--border-strong); }
+.catalogHeading { display: flex; align-items: end; justify-content: space-between; gap: 30px; }
+.catalogHeading h2 { max-width: 750px; font-size: clamp(2rem, 4vw, 3.8rem); }
+.catalogHeading > span { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; }
+.packRows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 50px; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--border); }
+.packRows article { min-height: 180px; display: flex; align-items: end; justify-content: space-between; gap: 20px; padding: 26px; background: var(--surface-1); }
+.packRows article > div { display: grid; }
+.packRows strong { font-family: var(--font-display); font-size: 40px; letter-spacing: -.05em; }
+.packRows span { color: var(--text-tertiary); font-size: 13px; }
+.packRows p { margin: 0; font-family: var(--font-display); font-size: 21px; font-weight: 700; }
+.measureSection { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; padding-block: 100px; border-top: 1px solid var(--border-strong); }
+.measureSection > div { padding-right: 24px; }
+.measureSection span { color: var(--action); font-family: var(--font-mono); font-size: 12px; }
+.measureSection h3 { margin: 20px 0 10px; font-family: var(--font-display); font-size: 22px; }
+.measureSection p { margin: 0; color: var(--text-secondary); line-height: 1.65; }
+
+@media (max-width: 920px) {
+  .header { grid-template-columns: 1fr auto; }
+  .nav { display: none; }
+  .hero { min-height: auto; grid-template-columns: 1fr; padding-top: 70px; }
+  .artifactBoard { width: min(620px, 100%); margin-inline: auto; }
+  .sectionIntro { grid-template-columns: 1fr; }
+  .sectionIntro > p { grid-column: auto; }
+  .safetySection { grid-template-columns: 1fr; gap: 52px; }
+  .safetyStatement { position: static; }
+  .finalCta,
+  .pricingAction { grid-template-columns: auto 1fr; }
+  .finalCta .primaryCta,
+  .pricingAction .primaryCta { grid-column: 1 / -1; }
+  .measureSection { grid-template-columns: 1fr; }
+  .packRows { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .header,
+  .footer,
+  .hero,
+  .workflowSection,
+  .safetySection,
+  .pricingPreview,
+  .finalCta,
+  .pricingPage { width: min(100% - 32px, 1180px); }
+  .header { min-height: 68px; gap: 10px; }
+  .wordmark small { display: none; }
+  .headerCta { display: none; }
+  .hero { padding-block: 58px 80px; }
+  .hero h1,
+  .pricingHero h1 { font-size: clamp(3rem, 15vw, 4.5rem); }
+  .heroActions { display: grid; }
+  .artifactBoard { min-height: 520px; }
+  .evidenceArtifact { width: 92%; }
+  .specArtifact { top: 35%; width: 91%; }
+  .releaseArtifact { width: 88%; }
+  .workflowSection,
+  .pricingPreview,
+  .safetySection { padding-block: 84px; }
+  .workflowList li { grid-template-columns: 38px 30px minmax(0, 1fr); gap: 12px; }
+  .workflowList p { font-size: 15px; }
+  .pricingRows article { grid-template-columns: 1fr; gap: 12px; }
+  .finalCta,
+  .pricingAction { margin-block: 30px 80px; grid-template-columns: 1fr; }
+  .finalCta svg { justify-self: start; }
+  .footer { min-height: 190px; align-items: flex-start; flex-direction: column; justify-content: center; }
+  .footer nav { margin-left: -12px; }
+  .pricingPage { padding-top: 60px; }
+  .pricingHero { padding-bottom: 76px; }
+  .catalogHeading { align-items: flex-start; flex-direction: column; }
+  .packRows article { min-height: 140px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .headerCta,
+  .signInLink,
+  .primaryCta,
+  .secondaryCta { transition: none; }
+}
+
+@media (prefers-contrast: more) {
+  .artifactBoard article,
+  .creditClarifier,
+  .finalCta,
+  .pricingAction { border-color: var(--border-strong); }
+}

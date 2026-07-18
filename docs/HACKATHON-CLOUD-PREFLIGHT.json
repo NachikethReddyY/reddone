@@ -1,0 +1,40 @@
+{
+  "tldr": "The hackathon-cloud conversion is viable, but the existing demo-mode bypass, single-owner authorization model, and new GCP signed-URL design must be resolved before implementation.",
+  "overall_confidence": 5,
+  "min_confidence": 4,
+  "confidence_details": { "eng": 8, "design": 6, "qa": 4, "security": 4 },
+  "overall_risk": "high",
+  "has_high_risk": true,
+  "risk_details": { "eng": "high", "design": "high", "qa": "high", "security": "high" },
+  "consensus": "conflict",
+  "consensus_details": { "eng": "revise", "design": "revise", "qa": "revise", "security": "block" },
+  "any_block": true,
+  "decision": "human_in_loop",
+  "decision_reason": "Minimum confidence is 4 (< 8), every reviewer marked high risk, and security blocked the plan because the current demo fallback can grant unauthenticated owner access and the migration changes the authorization boundary.",
+  "unanimous_high_confidence": false,
+  "summary_by_agent": {
+    "eng": "The existing release primitives are reusable, but the migration is cross-cutting and needs a distinct HACKATHON mode plus a concrete GCS signing design.",
+    "design": "Public onboarding, organization/team binding, quota states, and schedule removal need an explicit multi-page journey rather than minor connection-page edits.",
+    "qa": "Existing unit tests are strong for the private MVP but do not cover multi-user authorization, GCP federation, quotas, or real database migrations.",
+    "security": "Block pending a fail-closed deployment mode, centralized server-side membership authorization, secure admission-code handling, and exclusive external-account claims."
+  },
+  "key_findings": [
+    "Introduce an explicit HACKATHON deployment mode; production must reject demo behavior rather than treating a missing DEMO_MODE as a demo owner.",
+    "Replace User.workspaceId/OwnerContext authorization atomically with server-side membership lookup and explicit OWNER/MEMBER policy before enabling public sign-in.",
+    "Use a database-backed, high-entropy, HMAC/pepper-protected registration admission record with atomic consumption and durable throttling.",
+    "Keep Better Auth GitHub sign-in separate from GitHub App installation; do not retain unnecessary social OAuth tokens in plaintext account columns.",
+    "Bind and exclusively claim GitHub organization installations and Vercel teams per workspace; preserve release-time snapshot and ownership validation.",
+    "Design GCS artifact URLs around a restricted signer service account using IAM signBlob or a bounded proxy; Vercel OIDC alone cannot sign a GCS V4 URL.",
+    "Use GCS generation preconditions, canonical workspace/kind/hash validation, private uniform bucket access, strict upload bounds, and fail-closed KMS/storage errors.",
+    "Disable schedules in the API and cron execution path for Hobby mode, not only in the UI; add transactional server-side quotas and real PostgreSQL/two-tenant tests."
+  ],
+  "auto_approve_eligible": false,
+  "auto_approve_reason_if_eligible": null,
+  "human_in_loop_reason_if_applicable": "Authentication, authorization, cryptography, and infrastructure changes require explicit approval of the revised security design before code changes.",
+  "agent_outputs": [
+    { "review_type": "eng", "confidence": 8, "risk": "high", "recommendation": "revise" },
+    { "review_type": "design", "confidence": 6, "risk": "high", "recommendation": "revise" },
+    { "review_type": "qa", "confidence": 4, "risk": "high", "recommendation": "revise" },
+    { "review_type": "security", "confidence": 4, "risk": "high", "recommendation": "block" }
+  ]
+}

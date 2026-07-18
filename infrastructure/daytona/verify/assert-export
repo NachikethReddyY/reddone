@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+/opt/reddone/bin/seal-generated
+/opt/reddone/verify/assert-immutable
+/opt/reddone/verify/export-policy

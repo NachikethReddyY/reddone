@@ -1,0 +1,23 @@
+#!/bin/sh
+set -u
+
+case "${1:-}" in
+  manifest|secret-scan|dependency-audit|license-audit|sast|typecheck|lint|unit-tests|playwright|production-build)
+    gate=$1
+    ;;
+  *)
+    echo "unknown verifier gate"
+    exit 64
+    ;;
+esac
+
+/opt/reddone/bin/seal-generated || exit $?
+/opt/reddone/verify/assert-immutable || exit $?
+if "/opt/reddone/verify/$gate"; then
+  gate_status=0
+else
+  gate_status=$?
+fi
+/opt/reddone/verify/assert-immutable || exit $?
+/opt/reddone/verify/export-policy || exit $?
+exit "$gate_status"

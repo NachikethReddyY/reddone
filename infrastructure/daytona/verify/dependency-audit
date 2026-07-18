@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+cd /workspace
+/opt/reddone/verify/assert-immutable
+test -f /opt/dependency-audit-passed
+echo "dependency policy passed"

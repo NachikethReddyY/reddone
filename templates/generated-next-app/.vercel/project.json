@@ -1,0 +1,16 @@
+{
+  "orgId": "org_reddone_offline_build",
+  "projectId": "prj_reddone_offline_build",
+  "projectName": "reddone-generated-app",
+  "settings": {
+    "createdAt": 0,
+    "framework": "nextjs",
+    "devCommand": null,
+    "installCommand": "true",
+    "buildCommand": "./node_modules/.bin/next build --webpack",
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}

@@ -1,0 +1,44 @@
+#!/bin/sh
+set -eu
+cd /workspace
+find .next -mindepth 1 -delete
+rm -rf .vercel/output
+rm -rf .vercel/preview-output
+rm -rf .reddone-runtime/preview-static
+/opt/reddone/verify/validate-build-output.mjs project
+CI=1 NO_UPDATE_NOTIFIER=1 VERCEL_TELEMETRY_DISABLED=1 NEXT_TELEMETRY_DISABLED=1 \
+  ./node_modules/.bin/vercel build --standalone --no-color
+/opt/reddone/verify/validate-build-output.mjs release-config
+/opt/reddone/verify/materialize-build-output.mjs
+/opt/reddone/verify/validate-build-output.mjs release
+release_health_hash="$(sha256sum /workspace/src/app/api/health/route.ts | awk '{print $1}')"
+preview_source="$(mktemp -d /tmp/reddone-static-preview.XXXXXX)"
+cleanup_preview_source() {
+  rm -rf "$preview_source"
+}
+trap cleanup_preview_source EXIT INT TERM
+for trusted_file in package.json pnpm-lock.yaml pnpm-workspace.yaml next-env.d.ts next.config.ts tsconfig.json vercel.json; do
+  cp -p "/workspace/$trusted_file" "$preview_source/$trusted_file"
+done
+cp -R /workspace/src "$preview_source/src"
+if test -d /workspace/public; then cp -R /workspace/public "$preview_source/public"; fi
+ln -s /workspace/node_modules "$preview_source/node_modules"
+rm -rf "$preview_source/src/app/api/health"
+test ! -e "$preview_source/src/app/api/health/route.ts"
+cd "$preview_source"
+REDDONE_STATIC_PREVIEW=1 /workspace/node_modules/.bin/next build --webpack
+test -f .reddone-runtime/preview-static/index.html
+test -f .reddone-runtime/preview-static/health.json
+cd /workspace
+test "$(sha256sum /workspace/src/app/api/health/route.ts | awk '{print $1}')" = "$release_health_hash"
+mkdir -p .reddone-runtime/preview-static
+cp -R "$preview_source/.reddone-runtime/preview-static/." .reddone-runtime/preview-static/
+mkdir -p .vercel/preview-output/static
+cp -R .reddone-runtime/preview-static/. .vercel/preview-output/static/
+printf '%s\n' '{"version":3,"framework":{"version":"16.2.10"}}' > .vercel/preview-output/config.json
+/opt/reddone/verify/validate-build-output.mjs preview
+/opt/reddone/verify/secret-scan
+/opt/reddone/verify/export-policy
+cleanup_preview_source
+trap - EXIT INT TERM
+echo "server-capable release output and static-only preview output ready"

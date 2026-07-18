@@ -1,0 +1,90 @@
+.authScope {
+  background: var(--canvas);
+}
+
+.authScope :global(.auth-aside) {
+  border-color: var(--border);
+  color: var(--text);
+  background:
+    radial-gradient(circle at 18% 28%, color-mix(in srgb, var(--action) 15%, transparent), transparent 27rem),
+    linear-gradient(150deg, var(--surface-2), var(--canvas) 74%);
+}
+
+.authScope :global(.auth-aside)::before {
+  opacity: .5;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px);
+}
+
+.authScope :global(.auth-story h2) {
+  color: var(--text);
+}
+
+.authScope :global(.auth-main) {
+  background: var(--canvas-subtle);
+}
+
+.authScope :global(.auth-form) {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: clamp(24px, 4vw, 42px);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-float);
+}
+
+.authScope :global(.auth-mobile-brand) {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.authScope :global(.setup-token-note),
+.authScope :global(.session-note) {
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
+.authScope :global(.sign-in-options a),
+.authScope :global(.auth-legal a) {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--action);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.authScope :global(.sign-in-options a:hover),
+.authScope :global(.auth-legal a:hover) {
+  color: var(--action-hover);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.authScope :global(.auth-demo-link:hover) {
+  color: var(--action);
+}
+
+@media (max-width: 920px) {
+  .authScope :global(.auth-form) {
+    width: min(100%, 620px);
+  }
+}
+
+@media (max-width: 520px) {
+  .authScope :global(.auth-form) {
+    border-radius: var(--radius-lg);
+    padding: 22px;
+  }
+
+  .authScope :global(.auth-form-head h1) {
+    font-size: 32px;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .authScope :global(.auth-form),
+  .authScope :global(.auth-aside) {
+    border-color: var(--border-strong);
+  }
+}

@@ -1,0 +1,54 @@
+#!/bin/sh
+set -eu
+cd /workspace
+
+for root in src/app/generated src/components/generated src/content public/generated; do
+  if [ -L "$root" ]; then
+    echo "generated root replacement rejected: $root"
+    exit 1
+  fi
+done
+
+if find src/app/generated src/components/generated src/content public/generated \
+  -type d \( -name node_modules -o -name '.*' \) -print -quit | grep -q .; then
+  echo "generated package-resolution or hidden directory rejected"
+  exit 1
+fi
+
+if find src/app/generated src/components/generated src/content public/generated \
+  -type f -name package.json -print -quit | grep -q .; then
+  echo "generated package boundary rejected"
+  exit 1
+fi
+
+if find src/app/generated src/components/generated src/content public/generated \
+  \( -type l -o -type b -o -type c -o -type p -o -type s \) -print -quit | grep -q .; then
+  echo "generated link or special file rejected"
+  exit 1
+fi
+
+if find src/app/generated src/components/generated src/content public/generated \
+  -type f -links +1 -print -quit | grep -q .; then
+  echo "generated hard link rejected"
+  exit 1
+fi
+
+for output_root in .vercel/output .vercel/preview-output; do
+  if [ ! -e "$output_root" ]; then
+    continue
+  fi
+  if [ -L "$output_root" ]; then
+    echo "output root replacement rejected: $output_root"
+    exit 1
+  fi
+  if find "$output_root" \( -type l -o -type b -o -type c -o -type p -o -type s \) -print -quit | grep -q .; then
+    echo "output link or special file rejected: $output_root"
+    exit 1
+  fi
+  if find "$output_root" -type f -links +1 -print -quit | grep -q .; then
+    echo "output hard link rejected: $output_root"
+    exit 1
+  fi
+done
+
+echo "export file-type policy passed"

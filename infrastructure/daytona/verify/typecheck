@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+cd /workspace
+./node_modules/.bin/next typegen
+./node_modules/.bin/tsc --noEmit --incremental false

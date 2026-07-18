@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "incremental": false
+  },
+  "include": [
+    "../../prisma/seed.ts",
+    "../../src/contracts/**/*.ts",
+    "../../src/server/**/*.ts",
+    "./**/*.ts"
+  ],
+  "exclude": ["../../node_modules"]
+}

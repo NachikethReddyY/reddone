@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+cd /workspace
+/opt/reddone/verify/assert-immutable
+/opt/reddone/verify/export-policy
+echo "immutable starter, generated roots, and link policy passed"
