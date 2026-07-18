@@ -1,8 +1,8 @@
 {
-  "name": "reddone-control-plane",
+  "name": "reddone-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "A private, approval-gated research-to-release control plane.",
+  "description": "Backend API, workflow, and data layer for ReDDone.",
   "license": "UNLICENSED",
   "packageManager": "pnpm@11.11.0",
   "engines": {
