@@ -167,6 +167,57 @@ enum GrantStatus {
   SUPERSEDED
 }
 
+enum ProjectAuthorityMode {
+  READ_ONLY
+  REVIEW
+  AUTOPILOT
+}
+
+enum ConversationMessageRole {
+  OWNER
+  ASSISTANT
+  SYSTEM
+}
+
+enum ConversationTurnStatus {
+  QUEUED
+  RUNNING
+  CANCEL_REQUESTED
+  CANCELED
+  COMPLETED
+  FAILED
+}
+
+enum ConversationEventType {
+  TURN_STARTED
+  AGENT_STATUS
+  TOOL_STARTED
+  TOOL_COMPLETED
+  ASSISTANT_DELTA
+  ACTION_PROPOSED
+  ASSISTANT_COMPLETED
+  TURN_FAILED
+  TURN_CANCELED
+  TURN_COMPLETED
+}
+
+enum ConversationActionRisk {
+  LOW
+  MEDIUM
+  HIGH
+  BLOCKED
+}
+
+enum ConversationActionStatus {
+  PROPOSED
+  EXECUTING
+  EXECUTED
+  DISMISSED
+  EXPIRED
+  SUPERSEDED
+  FAILED
+}
+
 enum ScheduleKind {
   HOURLY_RESEARCH
   FIVE_HOUR_POLISH
@@ -298,6 +349,8 @@ model Workspace {
   stripeEvents          StripeEvent[]
   activityEvents        ActivityEvent[]
   auditEvents           AuditEvent[]
+  conversations         ProjectConversation[]
+  conversationLeases    ConversationTurnLease[]
 
   @@map("workspaces")
 }
@@ -477,6 +530,7 @@ model Project {
   researchMode         ResearchMode
   config               Json
   status               ProjectStatus @default(DRAFT)
+  authorityMode        ProjectAuthorityMode @default(READ_ONLY)
   optimisticVersion    Int           @default(0)
   currentBlocker       String?       @db.VarChar(500)
   selectedFindingId    String?       @db.Uuid
@@ -496,6 +550,7 @@ model Project {
   repository     RepositoryBinding?
   deployments    Deployment[]
   schedules      Schedule[]
+  conversations  ProjectConversation[]
 
   @@unique([workspaceId, id])
   @@unique([workspaceId, slug])
@@ -1370,4 +1425,151 @@ model AuditEvent {
   @@index([workspaceId, createdAt(sort: Desc)])
   @@index([expiresAt])
   @@map("audit_events")
+}
+
+model ProjectConversation {
+  id                String   @id @default(uuid()) @db.Uuid
+  workspaceId       String   @db.Uuid
+  projectId         String   @db.Uuid
+  title             String   @db.VarChar(120)
+  summary           String?  @db.Text
+  optimisticVersion Int      @default(0)
+  archivedAt        DateTime? @db.Timestamptz(6)
+  lastActivityAt    DateTime @default(now()) @db.Timestamptz(6)
+  createdAt         DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(6)
+
+  workspace Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project                   @relation(fields: [workspaceId, projectId], references: [workspaceId, id], onDelete: Cascade)
+  messages  ConversationMessage[]
+  turns     ConversationTurn[]
+  actions   ConversationAction[]
+
+  @@unique([workspaceId, projectId, id])
+  @@index([workspaceId, projectId, archivedAt, lastActivityAt(sort: Desc)])
+  @@map("project_conversations")
+}
+
+model ConversationMessage {
+  id             String                  @id @default(uuid()) @db.Uuid
+  workspaceId    String                  @db.Uuid
+  projectId      String                  @db.Uuid
+  conversationId String                  @db.Uuid
+  sequence       Int
+  role           ConversationMessageRole
+  authorUserId   String?
+  content        String                  @db.Text
+  contentHash    String                  @db.Char(64)
+  metadata       Json                    @default("{}")
+  createdAt      DateTime                @default(now()) @db.Timestamptz(6)
+
+  conversation ProjectConversation @relation(fields: [workspaceId, projectId, conversationId], references: [workspaceId, projectId, id], onDelete: Cascade)
+
+  @@unique([workspaceId, projectId, conversationId, sequence])
+  @@unique([workspaceId, projectId, id])
+  @@index([workspaceId, projectId, conversationId, createdAt])
+  @@map("conversation_messages")
+}
+
+model ConversationTurn {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  workspaceId         String                 @db.Uuid
+  projectId           String                 @db.Uuid
+  conversationId      String                 @db.Uuid
+  ownerMessageId      String                 @db.Uuid
+  status              ConversationTurnStatus @default(QUEUED)
+  stateVersion        Int                    @default(0)
+  idempotencyKey      String                 @db.VarChar(200)
+  authorityMode       ProjectAuthorityMode
+  projectVersion      Int
+  modelVersion        String?                @db.VarChar(120)
+  promptVersion       String?                @db.VarChar(100)
+  toolsetVersion      String?                @db.VarChar(100)
+  policyVersion       String?                @db.VarChar(100)
+  budgetCeilingMicros BigInt                 @default(0)
+  actualCostMicros    BigInt                 @default(0)
+  partialResponse     String?                @db.Text
+  cancelRequestedAt   DateTime?              @db.Timestamptz(6)
+  startedAt           DateTime?              @db.Timestamptz(6)
+  finishedAt          DateTime?              @db.Timestamptz(6)
+  failureCode         String?                @db.VarChar(100)
+  failureMessage      String?                @db.VarChar(1000)
+  createdAt           DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime               @updatedAt @db.Timestamptz(6)
+
+  conversation ProjectConversation      @relation(fields: [workspaceId, projectId, conversationId], references: [workspaceId, projectId, id], onDelete: Cascade)
+  events       ConversationTurnEvent[]
+  actions      ConversationAction[]
+  lease        ConversationTurnLease?
+
+  @@unique([workspaceId, idempotencyKey])
+  @@unique([workspaceId, projectId, id])
+  @@index([workspaceId, projectId, conversationId, status, createdAt(sort: Desc)])
+  @@map("conversation_turns")
+}
+
+model ConversationTurnEvent {
+  id        String                @id @default(uuid()) @db.Uuid
+  workspaceId String               @db.Uuid
+  projectId String                 @db.Uuid
+  turnId    String                 @db.Uuid
+  sequence  BigInt                 @default(autoincrement())
+  type      ConversationEventType
+  payload   Json                   @default("{}")
+  expiresAt DateTime?              @db.Timestamptz(6)
+  createdAt DateTime               @default(now()) @db.Timestamptz(6)
+
+  turn ConversationTurn @relation(fields: [workspaceId, projectId, turnId], references: [workspaceId, projectId, id], onDelete: Cascade)
+
+  @@unique([workspaceId, turnId, sequence])
+  @@index([workspaceId, projectId, turnId, sequence])
+  @@index([expiresAt])
+  @@map("conversation_turn_events")
+}
+
+model ConversationAction {
+  id                     String                   @id @default(uuid()) @db.Uuid
+  workspaceId            String                   @db.Uuid
+  projectId              String                   @db.Uuid
+  conversationId         String                   @db.Uuid
+  turnId                 String?                  @db.Uuid
+  command                String                   @db.VarChar(100)
+  schemaVersion          String                   @db.VarChar(50)
+  payload                Json                     @default("{}")
+  payloadHash            String                   @db.Char(64)
+  expectedProjectVersion Int
+  risk                   ConversationActionRisk
+  status                 ConversationActionStatus @default(PROPOSED)
+  diff                   Json                     @default("{}")
+  expiresAt              DateTime                 @db.Timestamptz(6)
+  result                 Json?
+  auditEventId           String?                  @db.Uuid
+  createdAt              DateTime                 @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime                 @updatedAt @db.Timestamptz(6)
+
+  conversation ProjectConversation @relation(fields: [workspaceId, projectId, conversationId], references: [workspaceId, projectId, id], onDelete: Cascade)
+  turn         ConversationTurn?   @relation(fields: [workspaceId, projectId, turnId], references: [workspaceId, projectId, id], onDelete: Restrict)
+
+  @@unique([workspaceId, projectId, id])
+  @@index([workspaceId, projectId, conversationId, status, expiresAt])
+  @@map("conversation_actions")
+}
+
+model ConversationTurnLease {
+  id           String    @id @default(uuid()) @db.Uuid
+  workspaceId  String    @db.Uuid
+  projectId    String    @db.Uuid
+  turnId       String    @unique @db.Uuid
+  ownerId      String    @db.VarChar(200)
+  fencingToken BigInt
+  acquiredAt   DateTime  @default(now()) @db.Timestamptz(6)
+  expiresAt    DateTime  @db.Timestamptz(6)
+  releasedAt   DateTime? @db.Timestamptz(6)
+
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  turn      ConversationTurn @relation(fields: [workspaceId, projectId, turnId], references: [workspaceId, projectId, id], onDelete: Cascade)
+
+  @@unique([workspaceId, projectId, turnId])
+  @@index([workspaceId, expiresAt, releasedAt])
+  @@map("conversation_turn_leases")
 }

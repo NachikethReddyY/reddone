@@ -31,7 +31,7 @@ import {
 } from "@/server/backend-providers";
 import { releaseCreditReservation, settleCreditReservation } from "@/server/credits";
 import { isCustomerCreditsEnforced } from "@/server/env";
-import { readProjectSecretVersion, readProviderCredential } from "@/server/secret-vault";
+import { readProjectSecretForRelease, readProviderCredential } from "@/server/secret-vault";
 import { createCanonicalApprovalRecord } from "@/server/security/approval";
 import { canonicalJson } from "@/server/security/canonical-json";
 import { verifySignedVerificationReport } from "@/server/security/verification-signature";
@@ -338,9 +338,10 @@ async function executeRelease(workspaceId: string, runId: string, fencingToken: 
   const approvedRuntimeVariables: { key: string; value: string }[] = [];
   for (const grant of payload.secretGrants) {
     await checkpointRun(workspaceId, runId, fencingToken, `release.secret.${grant.name}`);
-    const value = await readProjectSecretVersion({
+    const value = await readProjectSecretForRelease({
       workspaceId,
       projectId: run.projectId,
+      releaseRunId: runId,
       secretVersionId: grant.secretVersionId,
       name: grant.name,
       version: grant.version,

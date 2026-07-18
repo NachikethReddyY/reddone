@@ -72,11 +72,10 @@ const ProviderCandidateMetadataSchema = z
   })
   .strict();
 
-type ProjectSecretMetadataRecord = {
+export type ProjectSecretMetadataRecord = {
   id: string;
   name: string;
   version: number;
-  maskedSuffix: string;
   revokedAt: string | null;
   createdAt: string;
   replayed: boolean;
@@ -89,8 +88,8 @@ function constantTimeHexEqual(left: string, right: string) {
 }
 
 function projectSecretRequestFingerprint(input: { projectId: string; name: string; value: string }) {
-  const signingKey = getRuntimeConfig().auth.secret;
-  if (!signingKey) throw new Error("A server signing key is required for project secret idempotency.");
+  const signingKey = process.env.PROJECT_SECRET_IDEMPOTENCY_KEY?.trim() || getRuntimeConfig().auth.secret;
+  if (!signingKey) throw new Error("A dedicated server key is required for project secret idempotency.");
   return createHmac("sha256", signingKey)
     .update(canonicalJson({ projectId: input.projectId, name: input.name, value: input.value }))
     .digest("hex");
@@ -108,7 +107,6 @@ function projectSecretMetadataFromEvent(
     typeof payload.id !== "string"
     || typeof payload.name !== "string"
     || typeof payload.version !== "number"
-    || typeof payload.maskedSuffix !== "string"
     || typeof payload.createdAt !== "string"
     || typeof payload.projectId !== "string"
     || typeof payload.requestFingerprint !== "string"
@@ -126,7 +124,6 @@ function projectSecretMetadataFromEvent(
     id: payload.id,
     name: payload.name,
     version: payload.version,
-    maskedSuffix: payload.maskedSuffix,
     revokedAt: typeof payload.revokedAt === "string" ? payload.revokedAt : null,
     createdAt: payload.createdAt,
     replayed: true,
@@ -930,7 +927,6 @@ export async function saveProjectSecret(input: {
           projectId: input.projectId,
           name: secret.name,
           version: secret.version,
-          maskedSuffix: secret.maskedSuffix,
           revokedAt: secret.revokedAt?.toISOString() ?? null,
           createdAt: secret.createdAt.toISOString(),
           replayed: false,
@@ -962,7 +958,6 @@ export async function saveProjectSecret(input: {
               projectId: input.projectId,
               name: secret.name,
               version: secret.version,
-              maskedSuffix: secret.maskedSuffix,
               purpose: input.purpose,
             }) as Prisma.InputJsonValue,
             expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60_000),
@@ -972,7 +967,6 @@ export async function saveProjectSecret(input: {
           id: metadata.id,
           name: metadata.name,
           version: metadata.version,
-          maskedSuffix: metadata.maskedSuffix,
           revokedAt: metadata.revokedAt,
           createdAt: metadata.createdAt,
           replayed: false,
@@ -1007,7 +1001,6 @@ export async function listProjectSecretMetadata(input: { workspaceId: string; pr
       id: true,
       name: true,
       version: true,
-      maskedSuffix: true,
       revokedAt: true,
       createdAt: true,
       grants: {
@@ -1035,7 +1028,6 @@ export async function listProjectSecretMetadata(input: { workspaceId: string; pr
         id: row.id,
         name: row.name,
         version: row.version,
-        maskedSuffix: row.maskedSuffix,
         isLatest,
         status: row.revokedAt ? "revoked" : "active",
         revokedAt: row.revokedAt?.toISOString() ?? null,
@@ -1081,14 +1073,31 @@ export async function getLatestGrantableArtifactMetadata(input: { workspaceId: s
   };
 }
 
-export async function readProjectSecretVersion(input: {
+/**
+ * Release-only decryption boundary. Callers must bind the read to the executing
+ * release run and exact active grant; conversations and generic server tools have
+ * no path to this capability.
+ */
+export async function readProjectSecretForRelease(input: {
   workspaceId: string;
   projectId: string;
+  releaseRunId: string;
   secretVersionId: string;
   name: string;
   version: number;
 }) {
-  const row = await getDb().secretVersion.findFirst({
+  const db = getDb();
+  const run = await db.workflowRun.findFirst({
+    where: { id: input.releaseRunId, workspaceId: input.workspaceId, projectId: input.projectId, kind: "RELEASE", status: "RUNNING" },
+    select: { id: true },
+  });
+  if (!run) throw new Error("Project secret decryption is limited to an active release workflow.");
+  const grant = await db.projectSecretGrant.findFirst({
+    where: { workspaceId: input.workspaceId, projectId: input.projectId, secretVersionId: input.secretVersionId, status: { in: ["PENDING", "ACTIVE"] }, revokedAt: null },
+    select: { id: true },
+  });
+  if (!grant) throw new Error("The exact project secret version has no active release grant.");
+  const row = await db.secretVersion.findFirst({
     where: {
       id: input.secretVersionId,
       workspaceId: input.workspaceId,

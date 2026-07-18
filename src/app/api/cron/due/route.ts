@@ -6,6 +6,7 @@ import { decideDueSchedule, failureBackoffUntil } from "@/server/schedule";
 import { createProductionRun, dispatchProductionRun, reconcileWorkflowOutbox } from "@/workflows/production-run";
 import { ProjectConfigSchema } from "@/contracts";
 import { reconcilePendingCancellations } from "@/workflows/cancellation";
+import { reconcileConversationOutbox } from "@/workflows/conversation-dispatch";
 import { isDemoMode, isHackathonMode } from "@/server/env";
 
 export async function GET(request: Request) {
@@ -20,8 +21,9 @@ export async function GET(request: Request) {
     // lease capacity is released only after durable shutdown is proven.
     const cancellations = await reconcilePendingCancellations(50);
     const outbox = await reconcileWorkflowOutbox(50);
+    const conversations = await reconcileConversationOutbox(50);
     if (isHackathonMode()) {
-      return ok({ enqueued: [], count: 0, schedulesDisabled: true, outbox, cancellations }, id);
+      return ok({ enqueued: [], count: 0, schedulesDisabled: true, outbox, conversations, cancellations }, id);
     }
     const schedules = await db.schedule.findMany({
       where: { status: { in: ["ENABLED", "BACKING_OFF"] }, nextRunAt: { lte: new Date() } },
@@ -108,7 +110,7 @@ export async function GET(request: Request) {
         });
       }
     }
-    return ok({ enqueued, count: enqueued.filter((item) => item.runId).length, coalesced: true, outbox, cancellations }, id);
+    return ok({ enqueued, count: enqueued.filter((item) => item.runId).length, coalesced: true, outbox, conversations, cancellations }, id);
   }
   const current = Date.now();
   const due = listProjects().flatMap((project) => {

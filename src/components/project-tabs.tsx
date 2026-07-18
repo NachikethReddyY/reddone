@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { Icon, type IconName } from "@/components/icons";
 
 const tabs: Array<{ slug: string; label: string; icon: IconName }> = [
-  { slug: "", label: "Overview", icon: "activity" },
+  { slug: "", label: "Conversation", icon: "chat" },
+  { slug: "/overview", label: "Overview", icon: "activity" },
   { slug: "/evidence", label: "Evidence", icon: "search" },
   { slug: "/spec", label: "Product spec", icon: "file" },
   { slug: "/builds", label: "Builds", icon: "terminal" },
