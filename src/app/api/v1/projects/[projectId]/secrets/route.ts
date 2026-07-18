@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { assertProjectRuntimeSecretNameAllowed, maskedSuffix } from "@/policy/secret-guard";
+import { assertProjectRuntimeSecretNameAllowed } from "@/policy/secret-guard";
 import { isDemoMode } from "@/server/env";
 import {
   getLatestGrantableArtifactMetadata,
@@ -81,7 +81,6 @@ export async function POST(request: Request, { params }: Context) {
       mode: "demo",
       name: body.name,
       version: 1,
-      maskedSuffix: maskedSuffix(body.value),
       purpose: body.purpose,
       status: "demo_discarded",
       message: "Demo mode discarded the supplied value immediately. No plaintext or ciphertext was persisted.",

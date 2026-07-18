@@ -20,7 +20,6 @@ type ProjectSecretMetadata = {
   id: string;
   name: string;
   version: number;
-  maskedSuffix: string;
   isLatest: boolean;
   status: "active" | "revoked";
   revokedAt: string | null;
@@ -256,7 +255,7 @@ export function ProjectSecretsSettings({ projectId }: { projectId: string }) {
 
       {addOpen && (
         <form className="secret-create-panel" onSubmit={saveSecret}>
-          <div className="secret-write-only"><Icon name="lock" size={19} /><p><strong>This value is write-only.</strong> After saving, only its name, exact version, masked suffix, state, and timestamps return to the browser.</p></div>
+          <div className="secret-write-only"><Icon name="lock" size={19} /><p><strong>This value is write-only.</strong> After saving, only its name, exact version, state, and timestamps return to the browser.</p></div>
           <div className="field-grid two-col">
             <label className="form-field"><span>Environment name</span><input autoFocus autoCapitalize="characters" autoComplete="off" placeholder="STRIPE_SECRET_KEY" value={name} onChange={(event) => { secretMutationKey.current = null; setName(event.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, "")); }} /><small>Uppercase letters, numbers, and underscores.</small></label>
             <label className="form-field"><span>Purpose</span><input autoComplete="off" placeholder="Create restricted payment sessions" value={purpose} onChange={(event) => { secretMutationKey.current = null; setPurpose(event.target.value); }} /><small>Redacted audit context only; never passed as a secret value.</small></label>
@@ -276,14 +275,14 @@ export function ProjectSecretsSettings({ projectId }: { projectId: string }) {
         <div className="secret-skeleton" aria-label="Loading project secret metadata"><Skeleton /><Skeleton /><Skeleton /></div>
       ) : index?.items.length ? (
         <div className="secret-version-list" role="table" aria-label="Project secret versions">
-          <div className="secret-list-head" role="row"><span role="columnheader">Grant</span><span role="columnheader">Name and version</span><span role="columnheader">Masked value</span><span role="columnheader">Created</span><span role="columnheader">Grant state</span></div>
+          <div className="secret-list-head" role="row"><span role="columnheader">Grant</span><span role="columnheader">Name and version</span><span role="columnheader">State</span><span role="columnheader">Created</span><span role="columnheader">Grant state</span></div>
           {index.items.map((secret) => {
             const latestGrant = secret.grants[0];
             const selectable = index.mode === "live" && secret.status === "active";
             return <div className={`secret-version-row ${selectedIds.includes(secret.id) ? "is-selected" : ""}`} role="row" key={secret.id}>
               <span role="cell"><label className="secret-check"><input aria-label={`Select ${secret.name} version ${secret.version} for a grant proposal`} checked={selectedIds.includes(secret.id)} disabled={!selectable} type="checkbox" onChange={() => toggleSecret(secret)} /><i><Icon name="check" size={13} /></i></label></span>
               <span className="secret-name-cell" role="cell"><strong>{secret.name}</strong><small>Version {secret.version}{secret.isLatest ? " · latest" : ""}</small></span>
-              <code role="cell">••••{secret.maskedSuffix}</code>
+              <span role="cell"><StatusBadge tone={secret.status === "active" ? "success" : "neutral"}>{secret.status}</StatusBadge></span>
               <time role="cell" dateTime={secret.createdAt}>{new Date(secret.createdAt).toLocaleString()}</time>
               <span role="cell">{secret.status === "revoked" ? <StatusBadge tone="danger">Revoked</StatusBadge> : <>{latestGrant ? <StatusBadge tone={latestGrant.status === "active" ? "success" : latestGrant.status === "pending" ? "warning" : "neutral"}>{latestGrant.status === "active" ? "Granted" : latestGrant.status === "pending" ? "Approval pending" : latestGrant.status}</StatusBadge> : <StatusBadge tone="neutral">Not granted</StatusBadge>}<button className="text-button" disabled={revoking === secret.id} onClick={() => revokeSecret(secret)} type="button">{revoking === secret.id ? "Revoking…" : "Revoke"}</button></>}</span>
             </div>;
@@ -299,7 +298,7 @@ export function ProjectSecretsSettings({ projectId }: { projectId: string }) {
         <div className="secret-grant-review">
           <div><span className="eyebrow">Structured approval proposal</span><h3>Request access to exact secret versions?</h3><p>This creates a pending approval bound to the verified artifact and versions below. It does not expose or deploy any value now.</p></div>
           <div className="secret-grant-bindings">
-            {selectedSecrets.map((secret) => <span key={secret.id}><Icon name="key" size={15} /><strong>{secret.name}</strong><code>v{secret.version} · ••••{secret.maskedSuffix}</code></span>)}
+            {selectedSecrets.map((secret) => <span key={secret.id}><Icon name="key" size={15} /><strong>{secret.name}</strong><code>Version {secret.version}</code></span>)}
             <span><Icon name="layers" size={15} /><strong>Verified artifact</strong><code>{shortHash(index.grantTarget.artifactHash)}</code></span>
             <span><Icon name="clock" size={15} /><strong>Approval expiry</strong><code>24 hours</code></span>
           </div>

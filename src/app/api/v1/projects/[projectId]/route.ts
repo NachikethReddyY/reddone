@@ -45,6 +45,7 @@ export async function PATCH(request: Request, { params }: Context) {
           maxDocumentsPerRun: z.number().int().min(1).max(1_000).optional(),
           maxCostMicrosPerRun: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
           status: z.enum(["paused", "active"]).optional(),
+          authorityMode: z.enum(["read_only", "review", "autopilot"]).optional(),
           schedules: z.object({ hourlyResearch: z.boolean().optional(), fiveHourPolish: z.boolean().optional() }).optional(),
         })
         .strict()
@@ -83,6 +84,7 @@ export async function PATCH(request: Request, { params }: Context) {
             researchContext: config.researchContext,
             config,
             ...(body.status ? { status: body.status === "paused" ? "PAUSED" as const : resumedStatus } : {}),
+            ...(body.authorityMode ? { authorityMode: body.authorityMode.toUpperCase() as "READ_ONLY" | "REVIEW" | "AUTOPILOT" } : {}),
             ...(body.status === "active" ? { currentBlocker: null } : {}),
             optimisticVersion: { increment: 1 },
           },
@@ -113,6 +115,20 @@ export async function PATCH(request: Request, { params }: Context) {
             data: { status: "PAUSED", nextRunAt: null, backoffUntil: null, optimisticVersion: { increment: 1 } },
           });
         }
+        if (body.authorityMode) {
+          await tx.auditEvent.create({
+            data: {
+              workspaceId: context.owner.workspaceId,
+              actorUserId: context.owner.userId,
+              action: "project.authority_mode.updated",
+              targetType: "project",
+              targetId: projectId,
+              requestId: context.requestId,
+              metadata: { authorityMode: body.authorityMode },
+              expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60_000),
+            },
+          });
+        }
         return result;
       });
       return ok(updated, context.requestId);
@@ -130,6 +146,7 @@ export async function PATCH(request: Request, { params }: Context) {
           maxDocumentsPerRun: z.number().int().min(1).max(1_000).optional(),
           maxCostMicrosPerRun: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
           status: z.enum(["paused", "active"]).optional(),
+          authorityMode: z.enum(["read_only", "review", "autopilot"]).optional(),
         schedules: z
           .object({ hourlyResearch: z.boolean().optional(), fiveHourPolish: z.boolean().optional() })
           .optional(),
