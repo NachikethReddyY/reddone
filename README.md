@@ -5,6 +5,18 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?logo=postgresql&logoColor=white)
 ![License](https://img.shields.io/badge/License-UNLICENSED-red)
 
+## What is ReDDone?
+
+**ReDDone transforms Reddit's unfiltered customer conversations into validated, production-ready product specifications.**
+
+Upload an authorized research dataset—Reddit threads, subreddit discussions, or community feedback—and ReDDone validates data integrity, extracts authentic pain points in real customer language, and surfaces the most valuable insights. The platform routes selected signals through an AI-powered specification generator that drafts clear product requirements, runs them through isolated sandboxes to generate working prototypes, and delivers everything through an approval-gated workflow where teams review, approve, and ship to GitHub and Vercel without ever losing control of their research, code, or sensitive customer data.
+
+**The Problem:** Founders spend weeks manually parsing Reddit to find real customer problems, then can't trust AI-generated specs because they can't trace provenance or verify what data was actually used.
+
+**The Solution:** ReDDone closes that loop in hours—every pain point is linked to original research, every spec change is auditable, and every release requires explicit founder sign-off. Ship customer-validated products faster than you can write a Discord message.
+
+---
+
 ReDDone is a private, approval-gated control plane that turns authorized market evidence into a verified Next.js application, private GitHub repository, and prebuilt Vercel deployment.
 
 The repository ships in **demo mode by default**. Demo mode exercises the same contracts, approval states, and UI without making external calls or pretending mock resources are live.
