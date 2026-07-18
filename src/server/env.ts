@@ -150,6 +150,10 @@ export const RuntimeEnvSchema = z
     REDDIT_CLIENT_SECRET: OptionalString,
     REDDIT_USER_AGENT: OptionalString,
     REDDIT_APPROVAL_REFERENCE: OptionalString,
+    OXYLABS_ENDPOINT: OptionalString,
+    OXYLABS_PORT: OptionalString,
+    OXYLABS_USERNAME: OptionalString,
+    OXYLABS_PASSWORD: OptionalString,
     AUTH_TRUSTED_ORIGIN: OptionalOrigin,
   })
   .passthrough();
