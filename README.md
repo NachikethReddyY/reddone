@@ -1,27 +1,83 @@
 # ReDDone
 
+![Node.js](https://img.shields.io/badge/Node.js-24.18-green?logo=node.js&logoColor=white)
+![pnpm](https://img.shields.io/badge/pnpm-11-4a8fd7?logo=pnpm&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?logo=postgresql&logoColor=white)
+![License](https://img.shields.io/badge/License-UNLICENSED-red)
+
 ReDDone is a private, approval-gated control plane that turns authorized market evidence into a verified Next.js application, private GitHub repository, and prebuilt Vercel deployment.
 
 The repository ships in **demo mode by default**. Demo mode exercises the same contracts, approval states, and UI without making external calls or pretending mock resources are live.
 
+## How to Use
+
+### Getting Started with ReDDone
+
+![ReDDone Hero](docs/reddone-hero.png)
+
+The ReDDone workflow is designed for evidence-backed product development. Here's how to get started:
+
+1. **Access your account** - Use your invite code to unlock account creation
+2. **Enter your workspace** - Access the main ReDDone console
+3. **Manage approvals** - Review and approve specifications and releases
+4. **Deploy verified builds** - Push approved projects to GitHub and Vercel
+
+![ReDDone Invite Flow](docs/reddone-invite.png)
+
+**Two ways to get started:**
+- **Have an invite?** Redeem your code for immediate access
+- **No invite yet?** Join the waitlist to get early beta access and stay updated on launches
+
+## Overview
+
+ReDDone serves as an approval-gated control plane for creating, verifying, and deploying applications. It provides:
+
+- **Demo Mode**: Safe, local-only testing with no external dependencies
+- **Private Mode**: Full integration with GitHub, Vercel, and model providers
+- **Hackathon Mode**: Cloud-based workspace isolation for events
+
 ## Requirements
 
-- Node.js 24.18.x LTS
-- pnpm 11
-- PostgreSQL 17 for private live-mode state (Docker Compose is included), or Neon PostgreSQL for hackathon mode
+| Component | Version | Notes |
+|-----------|---------|-------|
+| Node.js | 24.18.x LTS | Required for backend |
+| pnpm | 11 | Package manager |
+| PostgreSQL | 17 | For live-mode state (Docker Compose included) |
+| | | Or Neon PostgreSQL for hackathon mode |
 
-## Quick demo
+## Quick Start
 
-1. Run `pnpm install`.
-2. Run `pnpm dev` and open `http://localhost:3000`.
+### Demo Mode (Default)
+
+```bash
+pnpm install
+pnpm dev  # Opens http://localhost:3000
+```
 
 Demo mode is the fail-safe default and needs no database or provider credentials. The console is populated with the LatePay Copilot scenario and makes no live provider calls.
 
-The runnable demo path is: approve the fixture specification in **Approvals**, open the project’s **Builds** tab and start a verified build, then approve the newly created first-release payload. The demo creates no external resource and labels that fact explicitly.
+**Demo Workflow:**
+1. Approve the fixture specification in **Approvals**
+2. Open the project’s **Builds** tab and start a verified build
+3. Approve the newly created first-release payload
 
-To validate the checked-in PostgreSQL migration locally, copy `.env.example` to `.env.local`, replace the development-only values, run `docker compose up -d postgres`, then run `pnpm db:deploy` and `pnpm db:seed`. A database does not turn demo adapters into live providers.
+The demo creates no external resources and labels that fact explicitly.
 
-For a local live-provider test, keep the secrets only in the gitignored server environment and configure:
+### Local Database Setup
+
+To validate the checked-in PostgreSQL migration:
+
+```bash
+cp .env.example .env.local
+# Update development values in .env.local
+docker compose up -d postgres
+pnpm db:deploy
+pnpm db:seed
+```
+
+### Live Provider Configuration
+
+For local live-provider testing, keep secrets in `.env.local` (gitignored) and configure:
 
 - `AIAND_API_KEY` to use ai&'s OpenAI-compatible gateway. Each manual research, ProductSpec, or build launch can select `zai-org/glm-5.2` or `moonshotai/kimi-k2.7-code`; selected model IDs are retained with the run and reused on retry. Keep the existing `KIMI_*_COST_MICROS_PER_MILLION` limits configured at least as high as the selected model's ai& rates so the provider-cost ceiling remains conservative. `KIMI_API_KEY` (or legacy `MOONSHOT_API_KEY`) remains supported for the existing Moonshot route.
 - `DAYTONA_API_KEY`, `DAYTONA_API_URL`, and the pinned builder/verifier snapshot names.
