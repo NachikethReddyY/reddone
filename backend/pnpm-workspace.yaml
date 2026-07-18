@@ -24,3 +24,18 @@ onlyBuiltDependencies:
   - "@prisma/engines"
   - "prisma"
   - "sharp"
+
+overrides:
+  path-to-regexp: ">=8.4.0"
+  tar: ">=7.5.8"
+  minimatch: ">=10.2.3"
+  undici: ">=6.20.0"
+  postcss: ">=8.4.47"
+  uuid: ">=9.0.2"
+  js-yaml: ">=4.1.2"
+  ajv: ">=8.16.0"
+  '@hono/node-server': ">=1.19.13"
+  fast-xml-parser: ">=5.7.0"
+  smol-toml: ">=1.6.1"
+  esbuild: ">=0.28.1"
+  '@tootallnate/once': ">=2.0.1"
