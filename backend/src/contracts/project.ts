@@ -8,6 +8,23 @@ import {
 } from "./common";
 
 export const ResearchModeSchema = z.enum(["fixture", "authorized_import", "live_reddit"]);
+
+const SubredditNameSchema = z
+  .string()
+  .trim()
+  .transform((value) => value.replace(/^r\//i, ""))
+  .pipe(z.string().regex(/^[A-Za-z0-9_]{2,21}$/, "Enter a valid subreddit name."));
+
+/** Persisted scope for the server-only Oxylabs public Reddit collector. */
+export const RedditWebScrapeConfigSchema = z
+  .object({
+    subreddit: SubredditNameSchema,
+    keywords: z.string().trim().min(2).max(200).optional(),
+    sort: z.enum(["relevance", "hot", "top", "new", "comments"]).default("relevance"),
+    time: z.enum(["hour", "day", "week", "month", "year", "all"]).default("year"),
+    agentCount: z.number().int().min(1).max(8).default(4),
+  })
+  .strict();
 export const ProjectStatusSchema = z.enum([
   "draft",
   "researching",
@@ -27,6 +44,7 @@ export const ProjectConfigSchema = z
     researchContext: z.string().trim().min(1).max(5_000),
     researchMode: ResearchModeSchema,
     sourceLabels: z.array(z.string().trim().min(1).max(120)).max(25).default([]),
+    redditWebScrape: RedditWebScrapeConfigSchema.optional(),
     maxDocumentsPerRun: z.number().int().min(1).max(1_000).default(100),
     maxCostMicrosPerRun: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).default(5_000_000),
     workspaceTimeZone: TimeZoneSchema,
@@ -39,7 +57,14 @@ export const ProjectConfigSchema = z
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["sourceLabels"],
-        message: "Live Reddit research requires at least one approved source label",
+        message: "Live Reddit research requires at least one scoped source label",
+      });
+    }
+    if (config.researchMode === "live_reddit" && !config.redditWebScrape) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["redditWebScrape"],
+        message: "Live Reddit research requires an Oxylabs collection scope",
       });
     }
   });
@@ -107,6 +132,7 @@ export const ProjectDetailSchema = ProjectSummarySchema.extend({
 }).strict();
 
 export type ResearchMode = z.infer<typeof ResearchModeSchema>;
+export type RedditWebScrapeConfig = z.infer<typeof RedditWebScrapeConfigSchema>;
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
 export type ProjectCreateInput = z.infer<typeof ProjectCreateInputSchema>;
 export type ProjectPatchInput = z.infer<typeof ProjectPatchInputSchema>;

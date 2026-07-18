@@ -12,7 +12,7 @@ import type { RedditWebScrapeConfig } from "@/contracts";
 import { IntegrationError } from "./errors";
 
 const REDDIT_ORIGIN = "https://www.reddit.com";
-const REDDIT_WEB_USER_AGENT = "ReDDone/1.0 (server-side Oxylabs collector)";
+const REDDONE_REDDIT_USER_AGENT = "ReDDone/1.0 (server-side public Reddit research collector)";
 const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 
@@ -22,7 +22,7 @@ export const OxylabsResidentialCredentialSchema = z
     port: z.string().trim().regex(/^\d{1,5}$/),
     username: z.string().trim().min(1).max(500),
     password: z.string().min(1).max(4_096),
-    approvalReference: z.string().trim().min(1).max(500),
+    authorizationReference: z.string().trim().min(1).max(500),
   })
   .strict();
 
@@ -275,7 +275,7 @@ function matchesKeywords(post: RedditPostData, keywords: string | undefined) {
 }
 
 async function fetchPost(agent: https.Agent, credentials: OxylabsResidentialCredentials, fallback: RedditPostData) {
-  const body = await getJson(agent, postUrl(fallback.id), REDDIT_WEB_USER_AGENT, `the ${fallback.id} post request`);
+  const body = await getJson(agent, postUrl(fallback.id), REDDONE_REDDIT_USER_AGENT, `the ${fallback.id} post request`);
   const thread = z.array(z.unknown()).min(1).safeParse(body);
   const listing = thread.success ? redditListingSchema.safeParse(thread.data[0]) : null;
   const post = listing?.success ? listing.data.data.children[0]?.data : undefined;
@@ -301,7 +301,7 @@ export async function scrapeRedditSubredditThroughOxylabs(input: {
     let pagesFetched = 0;
     do {
       const remaining = Math.min(100, maxDocuments - collected.length);
-      const body = await getJson(agent, listingUrl(input.config, after, remaining), REDDIT_WEB_USER_AGENT, `the r/${input.config.subreddit} listing`);
+      const body = await getJson(agent, listingUrl(input.config, after, remaining), REDDONE_REDDIT_USER_AGENT, `the r/${input.config.subreddit} listing`);
       const parsed = redditListingSchema.safeParse(body);
       if (!parsed.success) {
         throw new IntegrationError("invalid_response", "Reddit returned an invalid subreddit listing.", false, 502);

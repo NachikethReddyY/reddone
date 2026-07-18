@@ -9,7 +9,6 @@ import { getVerifiedArtifact, putImmutableArtifact } from "@/integrations/artifa
 import { publishVerifiedTree, reconcilePrivateRepository } from "@/integrations/github";
 import { generateProductSpec, improveProductSpec, synthesizeResearch, type ResearchInputDocument } from "@/integrations/kimi";
 import { scrapeRedditSubredditThroughOxylabs } from "@/integrations/oxylabs-reddit";
-import { fetchApprovedSubreddit, searchApprovedReddit } from "@/integrations/reddit";
 import {
   createVercelDeploymentMetadata,
   getVercelDeployment,
@@ -29,7 +28,6 @@ import {
   getBackendDaytonaApiKey,
   getBackendKimiApiKey,
   getBackendRedditResidentialCredentials,
-  getBackendRedditCredentials,
 } from "@/server/backend-providers";
 import { releaseCreditReservation, settleCreditReservation } from "@/server/credits";
 import { isCustomerCreditsEnforced } from "@/server/env";
@@ -792,58 +790,44 @@ export async function executeResearch(workspaceId: string, runId: string, fencin
       attribution: document.attribution,
     }));
   } else {
-    if (config.redditWebScrape) {
-      await checkpointRun(workspaceId, runId, fencingToken, "research.source.residential");
-      const collected = await scrapeRedditSubredditThroughOxylabs({
-        credentials: getBackendRedditResidentialCredentials(),
-        config: config.redditWebScrape,
-        maxDocuments: config.maxDocumentsPerRun,
-      });
-      documents = collected.documents.map((document) => ({
-        id: document.id,
-        title: document.title,
-        body: document.body,
-        score: document.score,
-        createdAt: document.createdAt,
-        permalink: document.permalink,
-        attribution: document.attribution,
-      }));
-      await recordAuditEvent({
-        workspaceId,
-        action: "reddit.residential_scrape.completed",
-        targetType: "workflow_run",
-        targetId: runId,
-        metadata: {
-          subreddit: `r/${config.redditWebScrape.subreddit}`,
-          sort: config.redditWebScrape.sort,
-          time: config.redditWebScrape.time,
-          keywordSearch: Boolean(config.redditWebScrape.keywords),
-          pagesFetched: collected.pagesFetched,
-          documents: documents.length,
-          agents: collected.agents,
-        },
-      });
-    } else {
-      const approvalReference =
-        run.project.sources.find((source) => source.mode === "LIVE_REDDIT")?.authorizationReference ?? "";
-      const backendCredentials = await getBackendRedditCredentials(workspaceId);
-      const credential = { ...backendCredentials, approvalReference };
-      for (const [sourceIndex, source] of config.sourceLabels.slice(0, 5).entries()) {
-        await checkpointRun(workspaceId, runId, fencingToken, `research.source.${sourceIndex + 1}`);
-        const listing = source.startsWith("search:")
-          ? await searchApprovedReddit({
-              credentials: credential,
-              query: source.slice("search:".length),
-              limit: Math.min(config.maxDocumentsPerRun, 100),
-            })
-          : await fetchApprovedSubreddit({
-              credentials: credential,
-              subreddit: source.replace(/^r\//, ""),
-              limit: Math.min(config.maxDocumentsPerRun, 100),
-            });
-        documents.push(...listing);
-      }
-    }
+    const firstSource = config.sourceLabels[0] ?? "r/all";
+    const scrapeConfig = config.redditWebScrape ?? {
+      subreddit: firstSource.startsWith("r/") ? firstSource.slice(2) : "all",
+      ...(firstSource.startsWith("search:") ? { keywords: firstSource.slice("search:".length) } : {}),
+      sort: "relevance" as const,
+      time: "year" as const,
+      agentCount: 4,
+    };
+    await checkpointRun(workspaceId, runId, fencingToken, "research.source.oxylabs");
+    const collected = await scrapeRedditSubredditThroughOxylabs({
+      credentials: getBackendRedditResidentialCredentials(),
+      config: scrapeConfig,
+      maxDocuments: config.maxDocumentsPerRun,
+    });
+    documents = collected.documents.map((document) => ({
+      id: document.id,
+      title: document.title,
+      body: document.body,
+      score: document.score,
+      createdAt: document.createdAt,
+      permalink: document.permalink,
+      attribution: document.attribution,
+    }));
+    await recordAuditEvent({
+      workspaceId,
+      action: "reddit.oxylabs_collection.completed",
+      targetType: "workflow_run",
+      targetId: runId,
+      metadata: {
+        subreddit: `r/${scrapeConfig.subreddit}`,
+        sort: scrapeConfig.sort,
+        time: scrapeConfig.time,
+        keywordSearch: Boolean(scrapeConfig.keywords),
+        pagesFetched: collected.pagesFetched,
+        documents: documents.length,
+        agents: collected.agents,
+      },
+    });
   }
   documents = [...new Map(documents.map((document) => [document.id, document])).values()]
     .slice(0, config.maxDocumentsPerRun);

@@ -10,12 +10,13 @@ vi.mock("openai", () => ({
 
 import { testKimiConnection } from "@/integrations/kimi";
 
-describe("Kimi connection capability probe", () => {
+describe("AIand inference capability probe", () => {
   beforeEach(() => {
     openAiMocks.create.mockReset();
-    vi.stubEnv("KIMI_BASE_URL", "https://provider.example/v1");
-    vi.stubEnv("KIMI_RESEARCH_MODEL", "research-model");
-    vi.stubEnv("KIMI_BUILDER_MODEL", "builder-model");
+    vi.stubEnv("AIAND_API_KEY", "aiand-provider-key");
+    vi.stubEnv("AIAND_BASE_URL", "https://provider.example/v1");
+    vi.stubEnv("AIAND_RESEARCH_MODEL", "zai-org/glm-5.2");
+    vi.stubEnv("AIAND_BUILDER_MODEL", "moonshotai/kimi-k2.7-code");
   });
 
   afterEach(() => vi.unstubAllEnvs());
@@ -41,7 +42,7 @@ describe("Kimi connection capability probe", () => {
     await expect(testKimiConnection("provider-key")).resolves.toMatchObject({ ok: true });
 
     expect(openAiMocks.create).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      model: "research-model",
+      model: "zai-org/glm-5.2",
       temperature: 0,
       max_tokens: 128,
       response_format: {
@@ -59,7 +60,7 @@ describe("Kimi connection capability probe", () => {
       },
     }));
     expect(openAiMocks.create).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      model: "builder-model",
+      model: "moonshotai/kimi-k2.7-code",
       temperature: 0,
       max_tokens: 128,
       parallel_tool_calls: false,
@@ -92,6 +93,8 @@ describe("Kimi connection capability probe", () => {
   });
 
   it("adapts TokenRouter's Kimi route to its required temperature and auto tool choice", async () => {
+    vi.stubEnv("AIAND_API_KEY", "");
+    vi.stubEnv("AIAND_BASE_URL", "");
     vi.stubEnv("KIMI_BASE_URL", "https://api.tokenrouter.com/v1");
     openAiMocks.create
       .mockResolvedValueOnce({ choices: [{ message: { content: '{"ok":true}' } }] })

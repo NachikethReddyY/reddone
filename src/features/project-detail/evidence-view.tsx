@@ -10,7 +10,7 @@ import { readProjectView, type ProjectFindingView, type ProjectViewModel } from 
 function evidenceMode(project: ProjectViewModel) {
   if (project.sourceMode === "live" && !project.liveAuthorized) {
     return {
-      badge: <StatusBadge tone="warning">Live Reddit locked</StatusBadge>,
+      badge: <StatusBadge tone="warning">Live collection locked</StatusBadge>,
       title: "Written authorization is not recorded",
       detail: "Live calls remain disabled. Use a fixture or an authorized JSON import while approval is pending.",
     };
@@ -189,7 +189,7 @@ export function EvidenceView({ projectId }: { projectId: string }) {
             );
           })}
         </div> : <EmptyState icon="search" title="No findings match" description="Adjust the search or sort to return to the ranked evidence set." action={<Button icon="close" onClick={() => { setQuery(""); setSort("rank"); }}>Clear filters</Button>} />}
-      </> : <EmptyState icon="database" title="No findings yet" description={project.sourceMode === "import" ? "Upload an authorized research packet, then start research from Overview." : project.sourceMode === "live" && !project.liveAuthorized ? "Live Reddit research is locked. Use an authorized import or fixture until written approval is recorded." : "Start a fixture research run from Overview. Ranked findings and attributed excerpts will appear here."} />}
+      </> : <EmptyState icon="database" title="No findings yet" description={project.sourceMode === "import" ? "Upload an authorized research packet, then start research from Overview." : project.sourceMode === "live" && !project.liveAuthorized ? "Live collection is locked. Configure Oxylabs and record its authorization reference, or use an authorized import." : "Start a fixture research run from Overview. Ranked findings and attributed excerpts will appear here."} />}
 
       {selected.length === 2 && (
         <Surface className="compare-drawer" aria-live="polite">

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Icon } from "@/components/icons";
 import { Button, ButtonLink, EmptyState, Metric, Skeleton, StatusBadge, Surface } from "@/components/ui";
-import { DEFAULT_WORKFLOW_MODEL, type JsonValue, WorkflowModelOptions, type WorkflowModel } from "@/contracts";
+import { DEFAULT_BUILDER_MODEL, type JsonValue, WorkflowModelOptions, type WorkflowModel } from "@/contracts";
 import {
   useCancelRunMutation,
   useProjectQuery,
@@ -102,7 +102,7 @@ function RunDetails({ run, timeline, logLines }: { run: ProjectRunDetail; timeli
 export function BuildsView({ projectId }: { projectId: string }) {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
-  const [model, setModel] = useState<WorkflowModel>(DEFAULT_WORKFLOW_MODEL);
+  const [model, setModel] = useState<WorkflowModel>(DEFAULT_BUILDER_MODEL);
   const [now, setNow] = useState(() => Date.now());
   const projectQuery = useProjectQuery(projectId);
   const latestBuildId = selectedRunId ?? projectQuery.data?.runs.find((run) => run.kind === "build" || run.kind === "polish")?.id ?? null;

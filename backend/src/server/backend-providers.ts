@@ -4,30 +4,32 @@ import { createHmac } from "node:crypto";
 
 import { z } from "zod";
 
-import { RedditStoredCredentialSchema, type RedditCredentials } from "@/integrations/reddit";
+import { inferenceEnvironmentApiKey } from "@/integrations/inference-config";
+import { OxylabsResidentialCredentialSchema, type OxylabsResidentialCredentials } from "@/integrations/oxylabs-reddit";
 
 import { getDb } from "./db";
 import { getRuntimeConfig } from "./env";
 import { readProviderCredential } from "./secret-vault";
 
-export type BackendProvider = "kimi" | "daytona" | "reddit";
+export type BackendProvider = "kimi" | "daytona";
 
 function kimiEnvironmentKey() {
-  return process.env.AIAND_API_KEY?.trim() || process.env.KIMI_API_KEY?.trim() || process.env.MOONSHOT_API_KEY?.trim() || null;
+  return inferenceEnvironmentApiKey();
 }
 
 function daytonaEnvironmentKey() {
   return process.env.DAYTONA_API_KEY?.trim() || null;
 }
 
-function redditEnvironmentCredentials(): RedditCredentials | null {
-  const parsed = RedditStoredCredentialSchema.safeParse({
-    clientId: process.env.REDDIT_CLIENT_ID,
-    clientSecret: process.env.REDDIT_CLIENT_SECRET,
-    userAgent: process.env.REDDIT_USER_AGENT,
+function oxylabsEnvironmentCredentials(): OxylabsResidentialCredentials | null {
+  const parsed = OxylabsResidentialCredentialSchema.safeParse({
+    endpoint: process.env.OXYLABS_ENDPOINT,
+    port: process.env.OXYLABS_PORT,
+    username: process.env.OXYLABS_USERNAME,
+    password: process.env.OXYLABS_PASSWORD,
+    authorizationReference: process.env.OXYLABS_AUTHORIZATION_REFERENCE ?? process.env.REDDIT_APPROVAL_REFERENCE,
   });
-  const approvalReference = process.env.REDDIT_APPROVAL_REFERENCE?.trim();
-  return parsed.success && approvalReference ? { ...parsed.data, approvalReference } : null;
+  return parsed.success ? parsed.data : null;
 }
 
 async function legacyConnection(workspaceId: string, provider: BackendProvider) {
@@ -50,7 +52,7 @@ async function legacyConnection(workspaceId: string, provider: BackendProvider) 
 async function requireLegacyCredential(workspaceId: string, provider: BackendProvider) {
   const connection = await legacyConnection(workspaceId, provider);
   if (!connection || connection.health !== "HEALTHY" || !connection.activeSecretVersionId) {
-    throw new Error(`${provider === "kimi" ? "Kimi" : provider === "daytona" ? "Daytona" : "Reddit"} is not configured in the backend.`);
+    throw new Error(`${provider === "kimi" ? "AIand inference" : "Daytona"} is not configured in the backend.`);
   }
   return { connection, credential: await readProviderCredential({ workspaceId, provider }) };
 }
@@ -67,25 +69,25 @@ export async function getBackendDaytonaApiKey(workspaceId: string) {
   return (await requireLegacyCredential(workspaceId, "daytona")).credential;
 }
 
-export async function getBackendRedditCredentials(workspaceId: string): Promise<RedditCredentials> {
-  const configured = redditEnvironmentCredentials();
-  if (configured) return configured;
-  const legacy = await requireLegacyCredential(workspaceId, "reddit");
-  const credential = RedditStoredCredentialSchema.parse(JSON.parse(legacy.credential));
-  const approvalReference = legacy.connection.authorizationRef?.trim();
-  if (!approvalReference) throw new Error("Reddit backend access requires a recorded authorization reference.");
-  return { ...credential, approvalReference };
+/** Oxylabs access is backend infrastructure; it is never exposed to generated code or browsers. */
+export function getBackendRedditResidentialCredentials(): OxylabsResidentialCredentials {
+  const configured = oxylabsEnvironmentCredentials();
+  if (!configured) {
+    throw new Error("Live Reddit discovery requires the four OXYLABS connection variables and OXYLABS_AUTHORIZATION_REFERENCE in the backend.");
+  }
+  return configured;
 }
 
 export async function getBackendProviderReadiness(workspaceId: string) {
   const environment = {
-    kimi: Boolean(kimiEnvironmentKey()),
+    aiand: Boolean(kimiEnvironmentKey()),
     daytona: Boolean(daytonaEnvironmentKey()),
-    reddit: Boolean(redditEnvironmentCredentials()),
+    oxylabs: Boolean(oxylabsEnvironmentCredentials()),
   };
-  const missing = (Object.entries(environment) as Array<[BackendProvider, boolean]>)
-    .filter(([, ready]) => !ready)
-    .map(([provider]) => provider.toUpperCase() as Uppercase<BackendProvider>);
+  const missing = [
+    ...(!environment.aiand ? ["KIMI" as const] : []),
+    ...(!environment.daytona ? ["DAYTONA" as const] : []),
+  ];
   const legacy = missing.length
     ? await getDb().providerConnection.findMany({
       where: { workspaceId, provider: { in: missing }, health: "HEALTHY", activeSecretVersionId: { not: null } },
@@ -94,17 +96,17 @@ export async function getBackendProviderReadiness(workspaceId: string) {
     : [];
   const legacyReady = new Map(legacy.map((connection) => [
     connection.provider.toLowerCase() as BackendProvider,
-    connection.provider !== "REDDIT" || Boolean(connection.authorizationRef),
+    true,
   ]));
   const ready = {
-    kimi: environment.kimi || legacyReady.get("kimi") === true,
+    aiand: environment.aiand || legacyReady.get("kimi") === true,
     daytona: environment.daytona || legacyReady.get("daytona") === true,
-    reddit: environment.reddit || legacyReady.get("reddit") === true,
+    oxylabs: environment.oxylabs,
   };
   return {
     providers: ready,
-    discoveryReady: ready.kimi && ready.reddit,
-    buildReady: ready.kimi && ready.daytona,
+    discoveryReady: ready.aiand && ready.oxylabs,
+    buildReady: ready.aiand && ready.daytona,
   };
 }
 
@@ -134,7 +136,7 @@ export async function getBackendBuildProviderAccounts(workspaceId: string) {
   });
   if (!connections.some((connection) => connection.provider === "KIMI")
     || !connections.some((connection) => connection.provider === "DAYTONA")) {
-    throw new Error("Kimi and Daytona must both be configured in the backend.");
+    throw new Error("AIand inference and Daytona must both be configured in the backend.");
   }
   return connections.map((connection) => ({
     provider: connection.provider.toLowerCase() as "kimi" | "daytona",
@@ -143,7 +145,7 @@ export async function getBackendBuildProviderAccounts(workspaceId: string) {
 }
 
 export const BackendProviderReadinessSchema = z.object({
-  providers: z.object({ kimi: z.boolean(), daytona: z.boolean(), reddit: z.boolean() }).strict(),
+  providers: z.object({ aiand: z.boolean(), daytona: z.boolean(), oxylabs: z.boolean() }).strict(),
   discoveryReady: z.boolean(),
   buildReady: z.boolean(),
 }).strict();

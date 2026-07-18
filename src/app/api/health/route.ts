@@ -40,7 +40,13 @@ export async function GET() {
     service: "reddone-control-plane",
     mode: config.mode,
     deploymentMode: config.deploymentMode,
-    redditAuthorizationConfigured: Boolean(process.env.REDDIT_APPROVAL_REFERENCE),
+    aiandConfigured: Boolean(process.env.AIAND_API_KEY || process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY),
+    oxylabsConfigured: Boolean(
+      process.env.OXYLABS_ENDPOINT
+      && process.env.OXYLABS_USERNAME
+      && process.env.OXYLABS_PASSWORD
+      && (process.env.OXYLABS_AUTHORIZATION_REFERENCE || process.env.REDDIT_APPROVAL_REFERENCE)
+    ),
     timestamp: new Date().toISOString(),
   });
 }

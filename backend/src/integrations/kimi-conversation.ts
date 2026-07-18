@@ -3,7 +3,7 @@ import "server-only";
 import OpenAI from "openai";
 
 import { IntegrationError } from "./errors";
-import { inferenceBaseUrl } from "./kimi";
+import { inferenceBaseUrl, inferenceResearchModel } from "./inference-config";
 
 const MAX_CONTEXT_BYTES = 24_000;
 const MAX_OUTPUT_CHARS = 8_000;
@@ -33,7 +33,7 @@ export async function generateKimiConversationResponse(input: {
   }
   try {
     const completion = await conversationClient(input.apiKey).chat.completions.create({
-      model: process.env.KIMI_RESEARCH_MODEL ?? "moonshotai/kimi-k2.6",
+      model: inferenceResearchModel(),
       temperature: 0.1,
       max_tokens: 1_200,
       messages: [
@@ -52,19 +52,19 @@ export async function generateKimiConversationResponse(input: {
     });
     const content = completion.choices[0]?.message.content?.trim();
     if (!content || content.length > MAX_OUTPUT_CHARS) {
-      throw new IntegrationError("invalid_response", "Kimi returned an invalid conversation response.", false, 422);
+      throw new IntegrationError("invalid_response", "AIand returned an invalid conversation response.", false, 422);
     }
-    return { content, model: completion.model ?? (process.env.KIMI_RESEARCH_MODEL ?? "moonshotai/kimi-k2.6") };
+    return { content, model: completion.model ?? inferenceResearchModel() };
   } catch (error) {
     if (error instanceof IntegrationError) throw error;
     if (error instanceof OpenAI.APIError) {
       throw new IntegrationError(
         error.status === 429 ? "rate_limited" : "provider_error",
-        error.status === 429 || (error.status ?? 0) >= 500 ? "Kimi is temporarily unavailable." : "Kimi rejected the conversation request.",
+        error.status === 429 || (error.status ?? 0) >= 500 ? "AIand is temporarily unavailable." : "AIand rejected the conversation request.",
         error.status === 429 || (error.status ?? 0) >= 500,
         error.status ?? 502,
       );
     }
-    throw new IntegrationError("provider_error", "Kimi could not complete the conversation request.", true);
+    throw new IntegrationError("provider_error", "AIand could not complete the conversation request.", true);
   }
 }

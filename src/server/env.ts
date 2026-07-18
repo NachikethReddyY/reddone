@@ -2,6 +2,13 @@ import { createHash } from "node:crypto";
 
 import { z } from "zod";
 
+import {
+  DEFAULT_BUILDER_MODEL,
+  DEFAULT_RESEARCH_MODEL,
+  WorkflowModelSchema,
+  type WorkflowModel,
+} from "@/contracts/model";
+
 import { AppError } from "./errors";
 
 const emptyToUndefined = (value: unknown): unknown => (value === "" ? undefined : value);
@@ -134,8 +141,10 @@ export const RuntimeEnvSchema = z
     MOONSHOT_API_KEY: OptionalString,
     AIAND_API_KEY: OptionalString,
     AIAND_BASE_URL: OptionalUrl,
-    KIMI_RESEARCH_MODEL: z.string().trim().min(1).default("kimi-k2.6"),
-    KIMI_BUILDER_MODEL: z.string().trim().min(1).default("kimi-k2.7-code"),
+    AIAND_RESEARCH_MODEL: WorkflowModelSchema.optional(),
+    AIAND_BUILDER_MODEL: WorkflowModelSchema.optional(),
+    KIMI_RESEARCH_MODEL: WorkflowModelSchema.optional(),
+    KIMI_BUILDER_MODEL: WorkflowModelSchema.optional(),
     KIMI_INPUT_COST_MICROS_PER_MILLION: OptionalCostRate,
     KIMI_OUTPUT_COST_MICROS_PER_MILLION: OptionalCostRate,
     DAYTONA_API_KEY: OptionalString,
@@ -146,14 +155,12 @@ export const RuntimeEnvSchema = z
     PROJECT_CONVERSATION_MUTATIONS_ENABLED: EnvBoolean.default(false),
     PROJECT_CONVERSATION_AUTOPILOT_ENABLED: EnvBoolean.default(false),
     PROJECT_SECRET_IDEMPOTENCY_KEY: OptionalSecret,
-    REDDIT_CLIENT_ID: OptionalString,
-    REDDIT_CLIENT_SECRET: OptionalString,
-    REDDIT_USER_AGENT: OptionalString,
     REDDIT_APPROVAL_REFERENCE: OptionalString,
     OXYLABS_ENDPOINT: OptionalString,
     OXYLABS_PORT: OptionalString,
     OXYLABS_USERNAME: OptionalString,
     OXYLABS_PASSWORD: OptionalString,
+    OXYLABS_AUTHORIZATION_REFERENCE: OptionalString,
     AUTH_TRUSTED_ORIGIN: OptionalOrigin,
   })
   .passthrough();
@@ -194,9 +201,9 @@ export interface RuntimeConfig {
     | { kind: "local"; masterKey: string }
     | { kind: "unavailable" };
   providers: {
-    kimiResearchModel: string;
-    kimiBuilderModel: string;
-    redditApproved: boolean;
+    aiandResearchModel: WorkflowModel;
+    aiandBuilderModel: WorkflowModel;
+    oxylabsAuthorized: boolean;
   };
   preview: {
     origin: string | null;
@@ -471,9 +478,9 @@ export function getRuntimeConfig(
     },
     vault,
     providers: {
-      kimiResearchModel: env.KIMI_RESEARCH_MODEL,
-      kimiBuilderModel: env.KIMI_BUILDER_MODEL,
-      redditApproved: Boolean(env.REDDIT_APPROVAL_REFERENCE),
+      aiandResearchModel: env.AIAND_RESEARCH_MODEL ?? env.KIMI_RESEARCH_MODEL ?? DEFAULT_RESEARCH_MODEL,
+      aiandBuilderModel: env.AIAND_BUILDER_MODEL ?? env.KIMI_BUILDER_MODEL ?? DEFAULT_BUILDER_MODEL,
+      oxylabsAuthorized: Boolean(env.OXYLABS_AUTHORIZATION_REFERENCE ?? env.REDDIT_APPROVAL_REFERENCE),
     },
     preview: {
       origin: env.PREVIEW_ORIGIN ? new URL(env.PREVIEW_ORIGIN).origin : null,

@@ -39,7 +39,7 @@ describe("Kimi usage extraction", () => {
     } catch (error) {
       expect(error).toMatchObject({
         code: "invalid_response",
-        message: "Kimi returned a response without valid token usage metadata.",
+        message: "The inference provider returned a response without valid token usage metadata.",
         retryable: false,
         status: 502,
       });

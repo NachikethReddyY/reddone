@@ -2,7 +2,7 @@ import "server-only";
 
 import OpenAI from "openai";
 
-import { DEFAULT_WORKFLOW_MODEL } from "@/contracts";
+import { DEFAULT_BUILDER_MODEL } from "@/contracts";
 import { IntegrationError } from "./errors";
 import { inferenceBaseUrl } from "./kimi";
 
@@ -34,7 +34,7 @@ export async function generateKimiConversationResponse(input: {
   }
   try {
     const completion = await conversationClient(input.apiKey).chat.completions.create({
-      model: DEFAULT_WORKFLOW_MODEL,
+      model: DEFAULT_BUILDER_MODEL,
       temperature: 0.1,
       max_tokens: 1_200,
       messages: [
@@ -53,19 +53,19 @@ export async function generateKimiConversationResponse(input: {
     });
     const content = completion.choices[0]?.message.content?.trim();
     if (!content || content.length > MAX_OUTPUT_CHARS) {
-      throw new IntegrationError("invalid_response", "Kimi returned an invalid conversation response.", false, 422);
+      throw new IntegrationError("invalid_response", "The inference provider returned an invalid conversation response.", false, 422);
     }
-    return { content, model: completion.model ?? DEFAULT_WORKFLOW_MODEL };
+    return { content, model: completion.model ?? DEFAULT_BUILDER_MODEL };
   } catch (error) {
     if (error instanceof IntegrationError) throw error;
     if (error instanceof OpenAI.APIError) {
       throw new IntegrationError(
         error.status === 429 ? "rate_limited" : "provider_error",
-        error.status === 429 || (error.status ?? 0) >= 500 ? "Kimi is temporarily unavailable." : "Kimi rejected the conversation request.",
+        error.status === 429 || (error.status ?? 0) >= 500 ? "AIand inference is temporarily unavailable." : "AIand inference rejected the conversation request.",
         error.status === 429 || (error.status ?? 0) >= 500,
         error.status ?? 502,
       );
     }
-    throw new IntegrationError("provider_error", "Kimi could not complete the conversation request.", true);
+    throw new IntegrationError("provider_error", "AIand inference could not complete the conversation request.", true);
   }
 }

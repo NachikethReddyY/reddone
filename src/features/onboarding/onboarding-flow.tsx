@@ -82,7 +82,7 @@ export function OnboardingFlow({ returnTo }: { returnTo?: string }) {
           <ol>
             <li><Icon name="search" size={20} /><div><strong>Bring evidence</strong><span>Authorized sources and excerpts remain attached to ranked problems.</span></div></li>
             <li><Icon name="approval" size={20} /><div><strong>Approve boundaries</strong><span>Specifications and releases stay behind explicit owner decisions.</span></div></li>
-            <li><Icon name="terminal" size={20} /><div><strong>Verify in isolation</strong><span>Kimi builds in Daytona; a clean environment verifies the artifact.</span></div></li>
+            <li><Icon name="terminal" size={20} /><div><strong>Verify in isolation</strong><span>AIand inference builds in Daytona; a clean environment verifies the artifact.</span></div></li>
           </ol>
         </section>
         <form className={styles.form} onSubmit={submit}>

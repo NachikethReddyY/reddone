@@ -79,13 +79,12 @@ pnpm db:seed
 
 For local live-provider testing, keep secrets in `.env.local` (gitignored) and configure:
 
-- `AIAND_API_KEY` to use ai&'s OpenAI-compatible gateway. Each manual research, ProductSpec, or build launch can select `zai-org/glm-5.2` or `moonshotai/kimi-k2.7-code`; selected model IDs are retained with the run and reused on retry. Keep the existing `KIMI_*_COST_MICROS_PER_MILLION` limits configured at least as high as the selected model's ai& rates so the provider-cost ceiling remains conservative. `KIMI_API_KEY` (or legacy `MOONSHOT_API_KEY`) remains supported for the existing Moonshot route.
+- `AIAND_API_KEY` to use AIand's OpenAI-compatible gateway at `https://api.aiand.com/v1`. Research defaults to `zai-org/glm-5.2`; builds default to `moonshotai/kimi-k2.7-code`. `AIAND_RESEARCH_MODEL` and `AIAND_BUILDER_MODEL` may select only those two IDs. Selected models are retained with each run and reused on retry. Keep the existing `KIMI_*_COST_MICROS_PER_MILLION` limits at least as high as the selected model's AIand rates so the provider-cost ceiling remains conservative. For an explicit legacy Moonshot fallback only, use `KIMI_API_KEY` (or `MOONSHOT_API_KEY`) with optional `KIMI_BASE_URL`; legacy `KIMI_RESEARCH_MODEL` and `KIMI_BUILDER_MODEL` remain accepted during migration.
 - `DAYTONA_API_KEY`, `DAYTONA_API_URL`, and the pinned builder/verifier snapshot names.
-- `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, a descriptive `REDDIT_USER_AGENT`, and the written `REDDIT_APPROVAL_REFERENCE` for the approved OAuth browse endpoints.
-- `OXYLABS_ENDPOINT`, `OXYLABS_PORT`, `OXYLABS_USERNAME`, and `OXYLABS_PASSWORD` for the approved residential-proxy Reddit web collector. The collector also requires the same descriptive `REDDIT_USER_AGENT` and written `REDDIT_APPROVAL_REFERENCE`; all values remain server-only.
+- `OXYLABS_ENDPOINT`, `OXYLABS_PORT`, `OXYLABS_USERNAME`, and `OXYLABS_PASSWORD` for the live public-evidence collector. `OXYLABS_AUTHORIZATION_REFERENCE` is mandatory as the written compliance gate; `REDDIT_APPROVAL_REFERENCE` remains a temporary fallback during migration. All values remain server-only.
 - `LOCAL_VAULT_DERIVE_FROM_AUTH=true` only on localhost so GitHub/Vercel account tokens do not require cloud OIDC. Production rejects this option.
 
-The **Connections** screen is only for owner-authorized GitHub and Vercel accounts. Kimi, Daytona, Reddit OAuth, and Oxylabs residential proxy access are backend infrastructure and never have browser credential forms. The UI sees only redacted readiness booleans from `/api/v1/providers/status`.
+The **Connections** screen is only for owner-authorized GitHub and Vercel accounts. AIand inference, Daytona, and Oxylabs access are backend infrastructure and never have browser credential forms. The UI sees only redacted readiness booleans from `/api/v1/providers/status`.
 
 When Oxylabs residential collection is configured, the Live Reddit web scrape source in the new-project flow lets an owner choose one subreddit, optional keywords, post sort, time frame, document cap, and one to eight bounded collection agents. The page cursor is collected serially, then the agents independently re-read their assigned public post pages through the proxy. The exact scope is stored with the project and reused by scheduled research; it cannot be supplied from the browser at run time.
 
@@ -97,16 +96,16 @@ Private mode is intentionally fail-closed. Before setting `APP_MODE=private`:
 2. Configure the Google Cloud KMS/artifact vault with a Vercel OIDC subject narrowed to the production project and environment.
 3. Build and publish the pinned Daytona snapshot from `infrastructure/daytona/Dockerfile` after a human security review.
 4. Register the least-privilege GitHub App and Vercel integration, configure signed webhooks, and test isolated accounts through **Connections**.
-5. Configure Kimi, Daytona, Reddit, and—when using website collection—Oxylabs as server-only environment secrets. Record a separate Reddit written-authorization reference before enabling any live Reddit source, and use the collector only for access permitted by your Reddit and Oxylabs agreements.
+5. Configure AIand inference, Daytona, and Oxylabs as server-only environment secrets. Record `OXYLABS_AUTHORIZATION_REFERENCE` before enabling live discovery, and use the collector only for access permitted by your source and Oxylabs agreements.
 6. Configure `PREVIEW_ORIGIN` on a dedicated HTTPS, cookie-less hostname (different from the console/auth origin), set an independent `PREVIEW_SIGNING_KEY`, and apply an edge rate limit to `/preview/*`.
 7. Set independent verification-signing credentials and current positive Kimi input/output price rates; live mode refuses unpriced provider calls.
 8. Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build`, then complete the threat-model and brand/legal gates documented under `docs/`.
 
-GitHub/Vercel account authorization and project runtime secrets are managed through the web UI. Kimi, Daytona, and Reddit credentials stay in the backend environment. Control-plane secrets are categorically ungrantable; project secrets require exact-version approval and are attached only to an approved release target.
+GitHub/Vercel account authorization and project runtime secrets are managed through the web UI. AIand inference, Daytona, and Oxylabs credentials stay in the backend environment. Control-plane secrets are categorically ungrantable; project secrets require exact-version approval and are attached only to an approved release target.
 
 ## Security model
 
-- Kimi, Daytona, and Reddit secrets belong only in the backend environment; GitHub/Vercel accounts belong in **Connections**. Never paste secrets into chat.
+- AIand inference, Daytona, and Oxylabs secrets belong only in the backend environment; GitHub/Vercel accounts belong in **Connections**. Never paste secrets into chat.
 - Saved values are write-only and never returned by APIs.
 - Production secret encryption uses Google Cloud KMS through Vercel OIDC.
 - Generated code runs only in isolated Daytona builder and verifier sandboxes.

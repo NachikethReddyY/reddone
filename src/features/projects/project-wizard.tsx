@@ -151,7 +151,7 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
   const [draftNotice, setDraftNotice] = useState("");
 
   const workspaceTimeZone = workspaceQuery.data?.workspaceTimeZone ?? "";
-  const residentialScraperReady = providerQuery.data?.providers.redditWebScraper === true;
+  const residentialScraperReady = providerQuery.data?.providers.oxylabs === true;
 
   const fieldErrors = useMemo<Partial<Record<FieldName, string>>>(() => {
     const next: Partial<Record<FieldName, string>> = {};
@@ -404,11 +404,11 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
 
         {step === 2 && (
           <div className="wizard-section reveal">
-            <div className="wizard-heading"><span className="step-number">02 / 04</span><h2>Choose where the evidence comes from.</h2><p>Fixture data and authorized imports work now. Live Reddit collection stays server-side, approval-gated, and routed through Oxylabs residential proxy access.</p></div>
+            <div className="wizard-heading"><span className="step-number">02 / 04</span><h2>Choose where the evidence comes from.</h2><p>Fixture data and authorized imports work now. Live public discovery stays server-side, authorization-gated, and routed through Oxylabs.</p></div>
             <div className="source-options" role="radiogroup" aria-label="Research source" onKeyDown={navigateSourceOptions}>
               <button aria-checked={source === "fixture"} className={source === "fixture" ? "is-selected" : ""} data-source="fixture" role="radio" tabIndex={source === "fixture" ? 0 : -1} onClick={() => edit(() => setSource("fixture"))} type="button"><span className="source-radio" /><Icon name="database" size={23} /><strong>Curated fixture</strong><p>Prove the workflow with attributable, anonymized evidence. Demo values are prefilled only in demo mode.</p><SourceBadge mode="fixture" /></button>
               <button aria-checked={source === "import"} className={source === "import" ? "is-selected" : ""} data-source="import" role="radio" tabIndex={source === "import" ? 0 : -1} onClick={() => edit(() => setSource("import"))} type="button"><span className="source-radio" /><Icon name="file" size={23} /><strong>Authorized JSON import</strong><p>Validate and ingest a dataset you have permission to process.</p><SourceBadge mode="import" /></button>
-              <button aria-checked={source === "live"} aria-disabled={!residentialScraperReady} className={`${source === "live" ? "is-selected" : ""} ${residentialScraperReady ? "" : "is-disabled"}`} data-source="live" disabled={!residentialScraperReady} role="radio" tabIndex={source === "live" && residentialScraperReady ? 0 : -1} onClick={() => residentialScraperReady && edit(() => setSource("live"))} type="button"><span className="source-radio" /><Icon name={residentialScraperReady ? "activity" : "lock"} size={23} /><strong>Live Reddit web scrape</strong><p>{residentialScraperReady ? "Use the approval-gated Oxylabs residential collector for one selected subreddit." : "Requires Oxylabs credentials and recorded Reddit authorization."}</p>{residentialScraperReady ? <SourceBadge mode="live" /> : <StatusBadge tone="neutral">Locked</StatusBadge>}</button>
+              <button aria-checked={source === "live"} aria-disabled={!residentialScraperReady} className={`${source === "live" ? "is-selected" : ""} ${residentialScraperReady ? "" : "is-disabled"}`} data-source="live" disabled={!residentialScraperReady} role="radio" tabIndex={source === "live" && residentialScraperReady ? 0 : -1} onClick={() => residentialScraperReady && edit(() => setSource("live"))} type="button"><span className="source-radio" /><Icon name={residentialScraperReady ? "activity" : "lock"} size={23} /><strong>Live public discovery</strong><p>{residentialScraperReady ? "Use the authorization-gated Oxylabs collector for one selected subreddit." : "Requires Oxylabs credentials and OXYLABS_AUTHORIZATION_REFERENCE."}</p>{residentialScraperReady ? <SourceBadge mode="live" /> : <StatusBadge tone="neutral">Locked</StatusBadge>}</button>
             </div>
             {source === "import" ? (
               <><label className={`file-drop ${fileName ? "has-file" : ""}`}>

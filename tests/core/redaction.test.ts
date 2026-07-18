@@ -39,6 +39,7 @@ describe("secret redaction", () => {
   it("keeps every signing key inside the control-plane boundary", () => {
     expect(() => assertProjectRuntimeSecretNameAllowed("VERIFICATION_SIGNING_KEY")).toThrow(/control-plane/i);
     expect(() => assertProjectRuntimeSecretNameAllowed("PREVIEW_SIGNING_KEY")).toThrow(/control-plane/i);
+    expect(() => assertProjectRuntimeSecretNameAllowed("AIAND_API_KEY")).toThrow(/control-plane/i);
     expect(() => assertProjectRuntimeSecretNameAllowed("CUSTOMER_RESTRICTED_API_KEY")).not.toThrow();
   });
 });

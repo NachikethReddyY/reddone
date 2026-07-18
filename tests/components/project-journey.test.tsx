@@ -146,7 +146,7 @@ function installWizardFetch(runEstimate = { ...estimate, projectId: "draft", run
   vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL) => {
     const url = urlOf(input);
     if (url === "/api/v1/projects") return response({ items: [], workspaceTimeZone: "America/New_York", demoMode: false });
-    if (url === "/api/v1/providers/status") return response({ providers: { kimi: true, daytona: true, reddit: true }, discoveryReady: true, buildReady: true });
+    if (url === "/api/v1/providers/status") return response({ providers: { aiand: true, daytona: true, oxylabs: true }, discoveryReady: true, buildReady: true });
     if (url === "/api/v1/projects/run-estimate") return response(runEstimate);
     throw new Error(`Unexpected request: ${url}`);
   }));
@@ -289,7 +289,7 @@ describe("create project paths", () => {
     expect(push).toHaveBeenCalledWith("/projects/new");
   });
 
-  it("creates a live Reddit search project and queues bounded research from a pasted brief", async () => {
+  it("creates an Oxylabs discovery project and queues bounded research from a pasted brief", async () => {
     const requests: Array<{ url: string; init?: RequestInit }> = [];
     vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = urlOf(input);
@@ -298,7 +298,7 @@ describe("create project paths", () => {
         return response({ items: [], workspaceTimeZone: "Asia/Singapore", demoMode: false });
       }
       if (url === "/api/v1/providers/status") {
-        return response({ providers: { kimi: true, daytona: true, reddit: true }, discoveryReady: true, buildReady: true });
+        return response({ providers: { aiand: true, daytona: true, oxylabs: true }, discoveryReady: true, buildReady: true });
       }
       if (url === "/api/v1/projects" && init?.method === "POST") {
         return response({ id: "project-discovery", optimisticVersion: 0 });
@@ -315,15 +315,17 @@ describe("create project paths", () => {
 
     const brief = "Build for a climate resilience hackathon. Judges want a focused tool that helps urban communities prepare for extreme heat using measurable evidence.";
     fireEvent.change(screen.getByPlaceholderText(/Paste the hackathon theme/), { target: { value: brief } });
-    const submit = await screen.findByRole("button", { name: "Find problems on Reddit" });
+    const submit = await screen.findByRole("button", { name: "Find evidence-backed problems" });
     await waitFor(() => expect(submit).toBeEnabled());
     fireEvent.click(submit);
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/projects/project-discovery/evidence"));
     const createRequest = requests.find((request) => request.url === "/api/v1/projects" && request.init?.method === "POST");
-    const createBody = JSON.parse(String(createRequest?.init?.body)) as { config: { researchMode: string; sourceLabels: string[]; researchContext: string } };
+    const createBody = JSON.parse(String(createRequest?.init?.body)) as { config: { researchMode: string; sourceLabels: string[]; researchContext: string; redditWebScrape: { subreddit: string; keywords: string } } };
     expect(createBody.config).toMatchObject({ researchMode: "live_reddit", researchContext: brief });
     expect(createBody.config.sourceLabels[0]).toMatch(/^search:/);
+    expect(createBody.config.redditWebScrape).toMatchObject({ subreddit: "all" });
+    expect(createBody.config.redditWebScrape.keywords).not.toContain("search:");
 
     const runRequest = requests.find((request) => request.url === "/api/v1/projects/project-discovery/runs");
     expect(JSON.parse(String(runRequest?.init?.body))).toEqual({ kind: "research", budgetCeilingMicros: 12_000_000 });
