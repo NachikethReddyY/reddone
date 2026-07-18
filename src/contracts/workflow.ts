@@ -14,6 +14,7 @@ import {
   RunUsageAggregateSchema,
   RunUsageEntrySchema,
 } from "./usage";
+import { DEFAULT_WORKFLOW_MODEL, WorkflowModelSchema } from "./model";
 
 export const RunKindSchema = z.enum(["research", "build", "polish", "release", "rollback"]);
 export const RunStatusSchema = z.enum([
@@ -53,6 +54,9 @@ export const RunStateSchema = z
     id: IdSchema,
     projectId: IdSchema,
     kind: RunKindSchema,
+    // Historical runs may contain a legacy provider model ID; new launches are
+    // restricted by CreateRunInputSchema below.
+    model: z.string().trim().min(1).max(120).default(DEFAULT_WORKFLOW_MODEL),
     status: RunStatusSchema,
     stateVersion: OptimisticVersionSchema,
     attempt: z.number().int().positive(),
@@ -99,6 +103,7 @@ export const RunDetailSchema = z.union([LiveRunDetailSchema, DemoRunDetailSchema
 export const CreateRunInputSchema = z
   .object({
     kind: z.enum(["research", "build", "polish"]),
+    model: WorkflowModelSchema.optional(),
     specVersionId: IdSchema.optional(),
     budgetCeilingMicros: MoneyMicrosSchema,
   })

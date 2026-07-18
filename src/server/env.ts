@@ -132,6 +132,8 @@ export const RuntimeEnvSchema = z
     PREVIEW_SIGNING_KEY: OptionalSecret,
     KIMI_API_KEY: OptionalString,
     MOONSHOT_API_KEY: OptionalString,
+    AIAND_API_KEY: OptionalString,
+    AIAND_BASE_URL: OptionalUrl,
     KIMI_RESEARCH_MODEL: z.string().trim().min(1).default("kimi-k2.6"),
     KIMI_BUILDER_MODEL: z.string().trim().min(1).default("kimi-k2.7-code"),
     KIMI_INPUT_COST_MICROS_PER_MILLION: OptionalCostRate,

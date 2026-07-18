@@ -726,6 +726,7 @@ model WorkflowRun {
   parentRunId         String?   @db.Uuid
   scheduleId          String?   @db.Uuid
   kind                RunKind
+  model               String    @default("moonshotai/kimi-k2.7-code") @db.VarChar(120)
   status              RunStatus @default(QUEUED)
   stateVersion        Int       @default(0)
   attempt             Int       @default(1)

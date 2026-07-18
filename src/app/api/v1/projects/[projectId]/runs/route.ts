@@ -20,6 +20,7 @@ export async function POST(request: Request, { params }: Context) {
         workspaceId: context.owner.workspaceId,
         projectId,
         kind: body.kind,
+        ...(body.model ? { model: body.model } : {}),
         ...(body.specVersionId ? { specVersionId: body.specVersionId } : {}),
         budgetCeilingMicros: body.budgetCeilingMicros,
         idempotencyKey: context.idempotencyKey,
@@ -31,7 +32,7 @@ export async function POST(request: Request, { params }: Context) {
     const cached = readIdempotent<unknown>(context.idempotencyKey);
     if (cached) return ok(cached, context.requestId);
     const body = z
-      .object({ kind: z.enum(["research", "build", "polish"]), budgetCeilingMicros: z.number().int().nonnegative().optional(), specVersionId: z.string().optional() })
+      .object({ kind: z.enum(["research", "build", "polish"]), model: z.enum(["zai-org/glm-5.2", "moonshotai/kimi-k2.7-code"]).optional(), budgetCeilingMicros: z.number().int().nonnegative().optional(), specVersionId: z.string().optional() })
       .strict()
       .parse(rawBody);
     const run = startRun(projectId, body.kind, context.expectedVersion!);

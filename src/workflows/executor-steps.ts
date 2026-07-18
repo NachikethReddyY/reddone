@@ -839,6 +839,7 @@ export async function executeResearch(workspaceId: string, runId: string, fencin
     documents,
     marketLabel: run.project.marketLabel,
     researchContext: run.project.researchContext,
+    model: run.model as "zai-org/glm-5.2" | "moonshotai/kimi-k2.7-code",
     onUsage: onKimiUsage,
   });
   await recordAuditEvent({
@@ -846,7 +847,7 @@ export async function executeResearch(workspaceId: string, runId: string, fencin
     action: "kimi.research.completed",
     targetType: "workflow_run",
     targetId: runId,
-    metadata: { model: process.env.KIMI_RESEARCH_MODEL ?? "kimi-k2.6", documentCount: documents.length, schemaVersion: "research_synthesis_v1" },
+    metadata: { model: run.model, documentCount: documents.length, schemaVersion: "research_synthesis_v1" },
   });
   const rankedCandidates = rankResearchCandidates(synthesis.candidates, documents);
   if (rankedCandidates.length === 0) throw new Error("Research did not produce a valid candidate.");
@@ -922,7 +923,7 @@ export async function executeResearch(workspaceId: string, runId: string, fencin
             totalScore: candidate.totalScore,
             scoreExplanation: `Rank ${candidate.rank}. Weighted from frequency, urgency, willingness to pay, and constrained MVP feasibility.`,
             selectedAt: null,
-            model: process.env.KIMI_RESEARCH_MODEL ?? "kimi-k2.6",
+            model: run.model,
             promptVersion: "research-v1",
             schemaVersion: "1",
           },
@@ -1053,6 +1054,7 @@ export async function executeSelectedFindingSpecification(
     marketLabel: run.project.marketLabel,
     candidate,
     evidence,
+    model: run.model as "zai-org/glm-5.2" | "moonshotai/kimi-k2.7-code",
     onUsage: onKimiUsage,
   }));
   const allowedEvidenceIds = new Set(evidence.map((item) => item.id));
@@ -1067,7 +1069,7 @@ export async function executeSelectedFindingSpecification(
     targetId: runId,
     metadata: {
       findingId: finding.id,
-      model: process.env.KIMI_RESEARCH_MODEL ?? "kimi-k2.6",
+      model: run.model,
       schemaVersion: "product_spec_v1",
     },
   });
@@ -1097,7 +1099,7 @@ export async function executeSelectedFindingSpecification(
         status: "PENDING_APPROVAL",
         content: spec,
         contentHash: specHash,
-        model: process.env.KIMI_RESEARCH_MODEL ?? "kimi-k2.6",
+        model: run.model,
         promptVersion: "spec-v1",
         schemaVersion: "1",
       },
@@ -1206,6 +1208,7 @@ export async function executeBuild(workspaceId: string, runId: string, fencingTo
       marketLabel: run.project.marketLabel,
       previousSpec: buildSpec,
       evidence: incrementalEvidence.map((item) => ({ id: item.id, excerpt: item.excerpt, attribution: item.attribution })),
+      model: run.model as "zai-org/glm-5.2" | "moonshotai/kimi-k2.7-code",
       onUsage: onKimiUsage,
     }));
     polishProposal = {
@@ -1221,7 +1224,7 @@ export async function executeBuild(workspaceId: string, runId: string, fencingTo
       targetType: "workflow_run",
       targetId: runId,
       metadata: {
-        model: process.env.KIMI_RESEARCH_MODEL ?? "kimi-k2.6",
+        model: run.model,
         promptVersion: "polish-v1",
         schemaVersion: "product_spec_polish_v1",
         evidenceCount: polishProposal.evidenceIds.length,
@@ -1234,6 +1237,7 @@ export async function executeBuild(workspaceId: string, runId: string, fencingTo
     runId,
     productSpec: buildSpec,
     kimiApiKey: kimiKey,
+    model: run.model as "zai-org/glm-5.2" | "moonshotai/kimi-k2.7-code",
     daytonaApiKey: daytonaKey,
     deadlineAt: buildDeadlineAt,
     onUsage: onKimiUsage,
@@ -1295,7 +1299,7 @@ export async function executeBuild(workspaceId: string, runId: string, fencingTo
           status: "PENDING_APPROVAL",
           content: polishProposal.content,
           contentHash: polishProposal.contentHash,
-          model: process.env.KIMI_RESEARCH_MODEL ?? "kimi-k2.6",
+          model: run.model,
           promptVersion: "polish-v1",
           schemaVersion: "product_spec_polish_v1",
         },

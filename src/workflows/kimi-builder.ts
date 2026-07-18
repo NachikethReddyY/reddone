@@ -11,10 +11,11 @@ import { z } from "zod";
 
 import { createIsolatedSandbox, verifierGates, type SandboxHandle } from "@/integrations/daytona";
 import { IntegrationError } from "@/integrations/errors";
+import { DEFAULT_WORKFLOW_MODEL, type WorkflowModel } from "@/contracts";
 import { buildArtifactManifest, verifyArtifactManifest } from "@/policy/build-boundary";
 import { redactSecrets } from "@/policy/secret-guard";
 import { canonicalJson } from "@/server/security/canonical-json";
-import { extractKimiUsageSample, getKimiTemperature, type KimiUsageSample } from "@/integrations/kimi";
+import { extractKimiUsageSample, getKimiTemperature, inferenceBaseUrl, type KimiUsageSample } from "@/integrations/kimi";
 import { BuildDeadline, isBuildDeadlineExceeded } from "./build-deadline";
 
 const readArgs = z.object({ path: z.string().min(1).max(500) }).strict();
@@ -84,7 +85,7 @@ const tools: ChatCompletionTool[] = [
 function kimi(apiKey: string, timeout: number) {
   return new OpenAI({
     apiKey,
-    baseURL: process.env.KIMI_BASE_URL ?? "https://api.moonshot.ai/v1",
+    baseURL: inferenceBaseUrl(),
     timeout,
     maxRetries: 2,
   });
@@ -113,12 +114,13 @@ export async function runKimiBuilder(input: {
   apiKey: string;
   sandbox: SandboxHandle;
   productSpec: unknown;
+  model?: WorkflowModel;
   maxTurns?: number;
   repairFeedback?: string;
   deadline: BuildDeadline;
   onUsage?: (sample: KimiUsageSample) => Promise<void> | void;
 }) {
-  const model = process.env.KIMI_BUILDER_MODEL ?? "kimi-k2.7-code";
+  const model = input.model ?? DEFAULT_WORKFLOW_MODEL;
   const maxTurns = Math.min(Math.max(input.maxTurns ?? 20, 1), 20);
   const messages: ChatCompletionMessageParam[] = [
     {
@@ -266,6 +268,7 @@ export async function runTwoSandboxBuild(input: {
   productSpec: unknown;
   kimiApiKey: string;
   daytonaApiKey: string;
+  model?: WorkflowModel;
   maxTurns?: number;
   deadlineAt?: number;
   onUsage?: (sample: KimiUsageSample) => Promise<void> | void;
@@ -305,6 +308,7 @@ export async function runTwoSandboxBuild(input: {
         apiKey: input.kimiApiKey,
         sandbox: builder!,
         productSpec: input.productSpec,
+        model: input.model,
         maxTurns: Math.min(maxTurns, remainingTurns),
         deadline,
         ...(input.onUsage ? { onUsage: input.onUsage } : {}),

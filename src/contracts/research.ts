@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { IdSchema, IsoDateTimeSchema, MoneyMicrosSchema, Sha256Schema, UrlSchema } from "./common";
+import { WorkflowModelSchema } from "./model";
 
 const HTML_TAG = /<\/?[A-Za-z][^>]*>/;
 const REMOTE_FETCH_INSTRUCTION =
@@ -91,6 +92,7 @@ export const GenerateFindingSpecInputSchema = z
     budgetCeilingMicros: MoneyMicrosSchema.refine((value) => value > 0, {
       message: "Specification generation requires a positive budget ceiling",
     }),
+    model: WorkflowModelSchema.optional(),
   })
   .strict();
 

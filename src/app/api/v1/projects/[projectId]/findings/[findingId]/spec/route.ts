@@ -19,6 +19,7 @@ export async function POST(request: Request, { params }: Context) {
         findingId,
         expectedProjectVersion: context.expectedVersion!,
         budgetCeilingMicros: body.budgetCeilingMicros,
+        ...(body.model ? { model: body.model } : {}),
         idempotencyKey: context.idempotencyKey,
       });
       const executorRunId = await dispatchProductionRun(context.owner.workspaceId, created.run.id);
