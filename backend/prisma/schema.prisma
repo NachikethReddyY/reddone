@@ -1,0 +1,1585 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum WorkspaceStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum Provider {
+  KIMI
+  DAYTONA
+  REDDIT
+  GITHUB
+  VERCEL
+}
+
+enum ConnectionHealth {
+  DISCONNECTED
+  PENDING
+  HEALTHY
+  DEGRADED
+  REVOKED
+  MISCONFIGURED
+}
+
+enum SecretScope {
+  CONTROL_PLANE
+  PROJECT_RUNTIME
+}
+
+enum ResearchMode {
+  FIXTURE
+  AUTHORIZED_IMPORT
+  LIVE_REDDIT
+}
+
+enum ResearchSourceStatus {
+  ACTIVE
+  DISABLED
+  PURGE_PENDING
+  PURGED
+}
+
+enum ResearchImportStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  PURGED
+}
+
+enum ProjectStatus {
+  DRAFT
+  RESEARCHING
+  AWAITING_SPEC_APPROVAL
+  READY_TO_BUILD
+  BUILDING
+  AWAITING_RELEASE_APPROVAL
+  RELEASED
+  PAUSED
+  FAILED
+  ARCHIVED
+}
+
+enum SpecStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  SUPERSEDED
+  REJECTED
+}
+
+enum RunKind {
+  RESEARCH
+  BUILD
+  POLISH
+  RELEASE
+  ROLLBACK
+}
+
+enum RunStatus {
+  QUEUED
+  RUNNING
+  WAITING_FOR_APPROVAL
+  CANCEL_REQUESTED
+  CANCELED
+  SUCCEEDED
+  FAILED
+}
+
+enum StepStatus {
+  PENDING
+  RUNNING
+  WAITING
+  SUCCEEDED
+  FAILED
+  CANCELED
+  SKIPPED
+}
+
+enum BudgetStatus {
+  RESERVED
+  COMMITTED
+  RELEASED
+  EXCEEDED
+}
+
+enum ApprovalKind {
+  SPECIFICATION_BUILD
+  FIRST_RELEASE
+  POLISH_RELEASE
+  SECRET_GRANT
+  ROLLBACK
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  CONSUMED
+  SUPERSEDED
+}
+
+enum ArtifactKind {
+  SOURCE
+  VERIFIED_SOURCE
+  VERCEL_OUTPUT
+  PREVIEW_STATIC
+  LOG_EXPORT
+}
+
+enum VerificationStatus {
+  PENDING
+  PASSED
+  FAILED
+  EXPIRED
+}
+
+enum RepositoryStatus {
+  PENDING
+  READY
+  FAILED
+  DISCONNECTED
+}
+
+enum DeploymentStatus {
+  QUEUED
+  UPLOADING
+  READY_UNPROMOTED
+  HEALTH_CHECKING
+  HEALTHY
+  FAILED
+  ROLLED_BACK
+  CANCELED
+}
+
+enum GrantStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+  SUPERSEDED
+}
+
+enum ProjectAuthorityMode {
+  READ_ONLY
+  REVIEW
+  AUTOPILOT
+}
+
+enum ConversationMessageRole {
+  OWNER
+  ASSISTANT
+  SYSTEM
+}
+
+enum ConversationTurnStatus {
+  QUEUED
+  RUNNING
+  CANCEL_REQUESTED
+  CANCELED
+  COMPLETED
+  FAILED
+}
+
+enum ConversationEventType {
+  TURN_STARTED
+  AGENT_STATUS
+  TOOL_STARTED
+  TOOL_COMPLETED
+  ASSISTANT_DELTA
+  ACTION_PROPOSED
+  ASSISTANT_COMPLETED
+  TURN_FAILED
+  TURN_CANCELED
+  TURN_COMPLETED
+}
+
+enum ConversationActionRisk {
+  LOW
+  MEDIUM
+  HIGH
+  BLOCKED
+}
+
+enum ConversationActionStatus {
+  PROPOSED
+  EXECUTING
+  EXECUTED
+  DISMISSED
+  EXPIRED
+  SUPERSEDED
+  FAILED
+}
+
+enum ScheduleKind {
+  HOURLY_RESEARCH
+  FIVE_HOUR_POLISH
+}
+
+enum ScheduleStatus {
+  ENABLED
+  PAUSED
+  BACKING_OFF
+  BLOCKED
+}
+
+enum BillingTier {
+  STARTER
+  BUILDER
+  SCALE
+}
+
+enum BillingSubscriptionStatus {
+  INACTIVE
+  INCOMPLETE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  PAUSED
+  CANCELED
+  UNPAID
+}
+
+enum BillingCheckoutKind {
+  SUBSCRIPTION
+  CREDIT_PACK
+}
+
+enum BillingCheckoutStatus {
+  PENDING
+  OPEN
+  COMPLETE
+  EXPIRED
+  FAILED
+}
+
+enum CreditReservationStatus {
+  HELD
+  SETTLED
+  RELEASED
+}
+
+enum CreditBucket {
+  INCLUDED
+  PROMOTIONAL
+  PURCHASED
+}
+
+enum CreditLedgerType {
+  PROMOTIONAL_GRANT
+  PERIOD_GRANT
+  PERIOD_EXPIRY
+  PURCHASE
+  PURCHASE_EXPIRY
+  HACKATHON_CODE_GRANT
+  HOLD
+  SETTLEMENT
+  RELEASE
+  ADJUSTMENT
+}
+
+enum StripeEventMode {
+  TEST
+  LIVE
+}
+
+enum StripeEventStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+}
+
+enum ActivitySeverity {
+  DEBUG
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+}
+
+model WaitlistEntry {
+  id              String   @id @default(uuid()) @db.Uuid
+  email           String   @unique @db.VarChar(320)
+  source          String   @default("beta-page") @db.VarChar(80)
+  requestCount    Int      @default(1)
+  consentedAt     DateTime @default(now()) @db.Timestamptz(6)
+  lastRequestedAt DateTime @default(now()) @db.Timestamptz(6)
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([createdAt(sort: Desc)])
+  @@map("waitlist_entries")
+}
+
+model Workspace {
+  id                     String          @id @default(uuid()) @db.Uuid
+  name                   String          @db.VarChar(120)
+  status                 WorkspaceStatus @default(ACTIVE)
+  timeZone               String          @default("Asia/Singapore") @db.VarChar(100)
+  maxConcurrentSandboxes Int             @default(2)
+  monthlyBudgetMicros    BigInt          @default(0)
+  createdAt              DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime        @updatedAt @db.Timestamptz(6)
+
+  owner                 User?
+  setupToken            SetupToken?
+  connections           ProviderConnection[]
+  secretVersions        SecretVersion[]
+  projects              Project[]
+  leases                RunLease[]
+  outboxEvents          OutboxEvent[]
+  inboxReceipts         InboxReceipt[]
+  budgetReservations    BudgetReservation[]
+  usageEntries          UsageLedger[]
+  billingAccount        BillingAccount?
+  billingCheckouts      BillingCheckoutSession[]
+  billingPeriods        BillingSubscriptionPeriod[]
+  creditAccount         CreditAccount?
+  creditReservations    CreditReservation[]
+  creditLots            CreditLot[]
+  creditCodeRedemptions CreditCodeRedemption[]
+  creditLedgerEntries   CreditLedger[]
+  stripeEvents          StripeEvent[]
+  activityEvents        ActivityEvent[]
+  auditEvents           AuditEvent[]
+  conversations         ProjectConversation[]
+  conversationLeases    ConversationTurnLease[]
+
+  @@map("workspaces")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  workspaceId   String   @unique @db.Uuid
+  name          String   @db.VarChar(120)
+  email         String   @unique @db.VarChar(320)
+  emailVerified Boolean  @default(false)
+  image         String?  @db.Text
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+
+  workspace             Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions              Session[]
+  accounts              Account[]
+  creditCodeRedemptions CreditCodeRedemption[]
+
+  @@unique([workspaceId, id])
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique @db.VarChar(255)
+  expiresAt DateTime @db.Timestamptz(6)
+  ipAddress String?  @db.VarChar(64)
+  userAgent String?  @db.Text
+  userId    String
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String    @db.VarChar(255)
+  providerId            String    @db.VarChar(100)
+  userId                String
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(6)
+  refreshTokenExpiresAt DateTime? @db.Timestamptz(6)
+  scope                 String?   @db.Text
+  password              String?   @db.Text
+  createdAt             DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String   @db.VarChar(320)
+  value      String   @db.Text
+  expiresAt  DateTime @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([identifier, expiresAt])
+  @@map("verifications")
+}
+
+model RateLimit {
+  id          String @id @default(cuid())
+  key         String @unique @db.VarChar(255)
+  count       Int
+  lastRequest BigInt
+
+  @@map("rateLimit")
+}
+
+model SetupToken {
+  id             String    @id @default(uuid()) @db.Uuid
+  workspaceId    String    @unique @db.Uuid
+  tokenHash      String    @unique @db.Char(64)
+  failedAttempts Int       @default(0)
+  lockedUntil    DateTime? @db.Timestamptz(6)
+  expiresAt      DateTime  @db.Timestamptz(6)
+  consumedAt     DateTime? @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("setup_tokens")
+}
+
+model ProviderConnection {
+  id                     String           @id @default(uuid()) @db.Uuid
+  workspaceId            String           @db.Uuid
+  provider               Provider
+  health                 ConnectionHealth @default(DISCONNECTED)
+  optimisticVersion      Int              @default(0)
+  accountExternalId      String?          @db.VarChar(300)
+  accountLabel           String?          @db.VarChar(300)
+  scopes                 String[]         @default([])
+  maskedSuffix           String?          @db.VarChar(4)
+  activeSecretVersionId  String?          @unique @db.Uuid
+  pendingSecretVersionId String?          @unique @db.Uuid
+  authorizationRef       String?          @db.Text
+  authorizedAt           DateTime?        @db.Timestamptz(6)
+  lastTestedAt           DateTime?        @db.Timestamptz(6)
+  lastHealthyAt          DateTime?        @db.Timestamptz(6)
+  failureCode            String?          @db.VarChar(100)
+  failureMessage         String?          @db.VarChar(500)
+  connectedAt            DateTime?        @db.Timestamptz(6)
+  disconnectedAt         DateTime?        @db.Timestamptz(6)
+  createdAt              DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime         @updatedAt @db.Timestamptz(6)
+
+  workspace            Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  secretVersions       SecretVersion[] @relation("ConnectionSecrets")
+  activeSecretVersion  SecretVersion?  @relation("ActiveConnectionSecret", fields: [activeSecretVersionId], references: [id], onDelete: SetNull)
+  pendingSecretVersion SecretVersion?  @relation("PendingConnectionSecret", fields: [pendingSecretVersionId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, provider])
+  @@index([workspaceId, health])
+  @@map("provider_connections")
+}
+
+model SecretVersion {
+  id                   String      @id @default(uuid()) @db.Uuid
+  workspaceId          String      @db.Uuid
+  projectId            String?     @db.Uuid
+  providerConnectionId String?     @db.Uuid
+  scope                SecretScope
+  logicalKey           String      @db.VarChar(240)
+  name                 String      @db.VarChar(100)
+  version              Int
+  algorithm            String      @default("A256GCM") @db.VarChar(32)
+  keyProvider          String      @db.VarChar(32)
+  keyId                String      @db.VarChar(500)
+  ciphertext           Bytes
+  wrappedDataKey       Bytes
+  iv                   Bytes
+  authTag              Bytes
+  wrapIv               Bytes?
+  wrapAuthTag          Bytes?
+  contextHash          String      @db.Char(64)
+  maskedSuffix         String      @db.VarChar(4)
+  createdByUserId      String?
+  revokedAt            DateTime?   @db.Timestamptz(6)
+  createdAt            DateTime    @default(now()) @db.Timestamptz(6)
+
+  workspace            Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project              Project?             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  providerConnection   ProviderConnection?  @relation("ConnectionSecrets", fields: [providerConnectionId], references: [id], onDelete: Cascade)
+  activeForConnection  ProviderConnection?  @relation("ActiveConnectionSecret")
+  pendingForConnection ProviderConnection?  @relation("PendingConnectionSecret")
+  grants               ProjectSecretGrant[]
+
+  @@unique([workspaceId, projectId, id])
+  @@unique([workspaceId, logicalKey, version])
+  @@index([workspaceId, projectId, scope, revokedAt])
+  @@index([providerConnectionId])
+  @@map("secret_versions")
+}
+
+model Project {
+  id                   String        @id @default(uuid()) @db.Uuid
+  workspaceId          String        @db.Uuid
+  name                 String        @db.VarChar(120)
+  slug                 String        @db.VarChar(80)
+  marketLabel          String        @db.VarChar(120)
+  researchContext      String        @db.Text
+  researchMode         ResearchMode
+  config               Json
+  status               ProjectStatus @default(DRAFT)
+  authorityMode        ProjectAuthorityMode @default(READ_ONLY)
+  optimisticVersion    Int           @default(0)
+  currentBlocker       String?       @db.VarChar(500)
+  selectedFindingId    String?       @db.Uuid
+  currentSpecVersionId String?       @db.Uuid
+  archivedAt           DateTime?     @db.Timestamptz(6)
+  createdAt            DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime      @updatedAt @db.Timestamptz(6)
+
+  workspace      Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  secretVersions SecretVersion[]
+  sources        ResearchSource[]
+  imports        ResearchImport[]
+  findings       Finding[]
+  specVersions   ProductSpecVersion[]
+  runs           WorkflowRun[]
+  approvals      Approval[]
+  repository     RepositoryBinding?
+  deployments    Deployment[]
+  schedules      Schedule[]
+  conversations  ProjectConversation[]
+
+  @@unique([workspaceId, id])
+  @@unique([workspaceId, slug])
+  @@index([workspaceId, status, updatedAt(sort: Desc)])
+  @@map("projects")
+}
+
+model ResearchSource {
+  id                     String               @id @default(uuid()) @db.Uuid
+  workspaceId            String               @db.Uuid
+  projectId              String               @db.Uuid
+  mode                   ResearchMode
+  status                 ResearchSourceStatus @default(ACTIVE)
+  label                  String               @db.VarChar(120)
+  externalRef            String?              @db.VarChar(500)
+  authorizationReference String?              @db.Text
+  authorizedAt           DateTime?            @db.Timestamptz(6)
+  metadata               Json                 @default("{}")
+  purgeRequestedAt       DateTime?            @db.Timestamptz(6)
+  purgedAt               DateTime?            @db.Timestamptz(6)
+  createdAt              DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime             @updatedAt @db.Timestamptz(6)
+
+  project   Project            @relation(fields: [workspaceId, projectId], references: [workspaceId, id], onDelete: Cascade)
+  imports   ResearchImport[]
+  documents ResearchDocument[]
+
+  @@unique([workspaceId, projectId, id])
+  @@index([workspaceId, projectId, status])
+  @@map("research_sources")
+}
+
+model ResearchImport {
+  id            String               @id @default(uuid()) @db.Uuid
+  workspaceId   String               @db.Uuid
+  projectId     String               @db.Uuid
+  sourceId      String               @db.Uuid
+  status        ResearchImportStatus @default(PENDING)
+  schemaVersion String               @db.VarChar(50)
+  objectKey     String               @db.VarChar(1024)
+  contentHash   String               @db.Char(64)
+  documentCount Int
+  byteSize      Int
+  rawExpiresAt  DateTime             @db.Timestamptz(6)
+  rejectionCode String?              @db.VarChar(100)
+  createdAt     DateTime             @default(now()) @db.Timestamptz(6)
+  acceptedAt    DateTime?            @db.Timestamptz(6)
+  purgedAt      DateTime?            @db.Timestamptz(6)
+
+  project   Project            @relation(fields: [workspaceId, projectId], references: [workspaceId, id], onDelete: Cascade)
+  source    ResearchSource     @relation(fields: [workspaceId, projectId, sourceId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  documents ResearchDocument[]
+
+  @@unique([workspaceId, projectId, id])
+  @@unique([workspaceId, projectId, contentHash])
+  @@index([rawExpiresAt, purgedAt])
+  @@map("research_imports")
+}
+
+model ResearchDocument {
+  id                String    @id @default(uuid()) @db.Uuid
+  workspaceId       String    @db.Uuid
+  projectId         String    @db.Uuid
+  sourceId          String    @db.Uuid
+  importId          String?   @db.Uuid
+  externalId        String    @db.VarChar(300)
+  title             String    @db.VarChar(500)
+  body              String    @db.Text
+  permalink         String?   @db.Text
+  attribution       String    @db.VarChar(300)
+  contentHash       String    @db.Char(64)
+  sourcePublishedAt DateTime? @db.Timestamptz(6)
+  rawExpiresAt      DateTime  @db.Timestamptz(6)
+  purgedAt          DateTime? @db.Timestamptz(6)
+  metadata          Json      @default("{}")
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+
+  source ResearchSource  @relation(fields: [workspaceId, projectId, sourceId], references: [workspaceId, projectId, id], onDelete: Cascade)
+  import ResearchImport? @relation(fields: [importId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, projectId, sourceId, externalId])
+  @@index([workspaceId, projectId, rawExpiresAt])
+  @@map("research_documents")
+}
+
+model Finding {
+  id                    String       @id @default(uuid()) @db.Uuid
+  workspaceId           String       @db.Uuid
+  projectId             String       @db.Uuid
+  title                 String       @db.VarChar(200)
+  problemSummary        String       @db.Text
+  solutionConcept       String?      @db.Text
+  audience              String       @db.Text
+  originMode            ResearchMode @default(FIXTURE)
+  frequencyScore        Decimal      @db.Decimal(5, 2)
+  severityScore         Decimal      @db.Decimal(5, 2)
+  willingnessToPayScore Decimal      @db.Decimal(5, 2)
+  feasibilityScore      Decimal      @db.Decimal(5, 2)
+  totalScore            Decimal      @db.Decimal(5, 2)
+  scoreExplanation      String       @db.Text
+  selectedAt            DateTime?    @db.Timestamptz(6)
+  model                 String       @db.VarChar(120)
+  promptVersion         String       @db.VarChar(100)
+  schemaVersion         String       @db.VarChar(100)
+  createdAt             DateTime     @default(now()) @db.Timestamptz(6)
+
+  project      Project              @relation(fields: [workspaceId, projectId], references: [workspaceId, id], onDelete: Cascade)
+  evidence     EvidenceExcerpt[]
+  specVersions ProductSpecVersion[]
+
+  @@unique([workspaceId, projectId, id])
+  @@index([workspaceId, projectId, totalScore(sort: Desc)])
+  @@index([workspaceId, originMode])
+  @@map("findings")
+}
+
+model EvidenceExcerpt {
+  id                      String    @id @default(uuid()) @db.Uuid
+  workspaceId             String    @db.Uuid
+  projectId               String    @db.Uuid
+  findingId               String    @db.Uuid
+  sourceExternalId        String    @db.VarChar(300)
+  excerpt                 String    @db.VarChar(1500)
+  permalink               String?   @db.Text
+  attribution             String    @db.VarChar(300)
+  contentHash             String    @db.Char(64)
+  sourcePublishedAt       DateTime? @db.Timestamptz(6)
+  capturedAt              DateTime  @default(now()) @db.Timestamptz(6)
+  retainedBySpecVersionId String?   @db.Uuid
+
+  finding Finding @relation(fields: [workspaceId, projectId, findingId], references: [workspaceId, projectId, id], onDelete: Cascade)
+
+  @@unique([workspaceId, projectId, id])
+  @@index([workspaceId, projectId, retainedBySpecVersionId])
+  @@map("evidence_excerpts")
+}
+
+model ProductSpecVersion {
+  id                String     @id @default(uuid()) @db.Uuid
+  workspaceId       String     @db.Uuid
+  projectId         String     @db.Uuid
+  basedOnFindingId  String     @db.Uuid
+  version           Int
+  optimisticVersion Int        @default(0)
+  status            SpecStatus @default(DRAFT)
+  content           Json
+  contentHash       String     @db.Char(64)
+  model             String?    @db.VarChar(120)
+  promptVersion     String?    @db.VarChar(100)
+  schemaVersion     String     @db.VarChar(100)
+  createdByUserId   String?
+  approvedAt        DateTime?  @db.Timestamptz(6)
+  supersededAt      DateTime?  @db.Timestamptz(6)
+  createdAt         DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime   @updatedAt @db.Timestamptz(6)
+
+  project   Project       @relation(fields: [workspaceId, projectId], references: [workspaceId, id], onDelete: Cascade)
+  finding   Finding       @relation(fields: [workspaceId, projectId, basedOnFindingId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  runs      WorkflowRun[]
+  approvals Approval[]
+
+  @@unique([workspaceId, projectId, id])
+  @@unique([projectId, version])
+  @@index([workspaceId, projectId, status, version(sort: Desc)])
+  @@map("product_spec_versions")
+}
+
+model WorkflowRun {
+  id                  String    @id @default(uuid()) @db.Uuid
+  workspaceId         String    @db.Uuid
+  projectId           String    @db.Uuid
+  specVersionId       String?   @db.Uuid
+  parentRunId         String?   @db.Uuid
+  scheduleId          String?   @db.Uuid
+  kind                RunKind
+  status              RunStatus @default(QUEUED)
+  stateVersion        Int       @default(0)
+  attempt             Int       @default(1)
+  currentStepKey      String?   @db.VarChar(100)
+  idempotencyKey      String    @db.VarChar(200)
+  budgetCeilingMicros BigInt
+  reservedMicros      BigInt    @default(0)
+  actualCostMicros    BigInt    @default(0)
+  cancelRequestedAt   DateTime? @db.Timestamptz(6)
+  startedAt           DateTime? @db.Timestamptz(6)
+  finishedAt          DateTime? @db.Timestamptz(6)
+  lastHeartbeatAt     DateTime? @db.Timestamptz(6)
+  failureCode         String?   @db.VarChar(100)
+  failureMessage      String?   @db.VarChar(1000)
+  createdAt           DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime  @updatedAt @db.Timestamptz(6)
+
+  project            Project             @relation(fields: [workspaceId, projectId], references: [workspaceId, id], onDelete: Cascade)
+  specVersion        ProductSpecVersion? @relation(fields: [workspaceId, projectId, specVersionId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  parentRun          WorkflowRun?        @relation("RunRetryChain", fields: [workspaceId, projectId, parentRunId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  childRuns          WorkflowRun[]       @relation("RunRetryChain")
+  schedule           Schedule?           @relation(fields: [workspaceId, projectId, scheduleId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  steps              WorkflowStep[]
+  budgetReservations BudgetReservation[]
+  usageEntries       UsageLedger[]
+  creditReservations CreditReservation[]
+  artifacts          BuildArtifact[]
+
+  @@unique([workspaceId, projectId, id])
+  @@unique([workspaceId, idempotencyKey])
+  @@index([workspaceId, projectId, status, createdAt(sort: Desc)])
+  @@index([workspaceId, status, lastHeartbeatAt])
+  @@map("workflow_runs")
+}
+
+model WorkflowStep {
+  id             String     @id @default(uuid()) @db.Uuid
+  workspaceId    String     @db.Uuid
+  projectId      String     @db.Uuid
+  runId          String     @db.Uuid
+  key            String     @db.VarChar(100)
+  label          String     @db.VarChar(200)
+  status         StepStatus @default(PENDING)
+  attempt        Int        @default(1)
+  inputHash      String?    @db.Char(64)
+  output         Json?
+  outputHash     String?    @db.Char(64)
+  startedAt      DateTime?  @db.Timestamptz(6)
+  finishedAt     DateTime?  @db.Timestamptz(6)
+  failureCode    String?    @db.VarChar(100)
+  failureMessage String?    @db.VarChar(1000)
+  createdAt      DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime   @updatedAt @db.Timestamptz(6)
+
+  run WorkflowRun @relation(fields: [workspaceId, projectId, runId], references: [workspaceId, projectId, id], onDelete: Cascade)
+
+  @@unique([runId, key, attempt])
+  @@index([workspaceId, runId, status])
+  @@map("workflow_steps")
+}
+
+model RunLease {
+  id           String    @id @default(uuid()) @db.Uuid
+  workspaceId  String    @db.Uuid
+  projectId    String?   @db.Uuid
+  runId        String?   @db.Uuid
+  resourceKey  String    @db.VarChar(300)
+  ownerId      String    @db.VarChar(200)
+  fencingToken BigInt
+  acquiredAt   DateTime  @default(now()) @db.Timestamptz(6)
+  expiresAt    DateTime  @db.Timestamptz(6)
+  releasedAt   DateTime? @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, resourceKey])
+  @@index([workspaceId, expiresAt, releasedAt])
+  @@map("run_leases")
+}
+
+model OutboxEvent {
+  id               String    @id @default(uuid()) @db.Uuid
+  workspaceId      String    @db.Uuid
+  aggregateType    String    @db.VarChar(100)
+  aggregateId      String    @db.VarChar(128)
+  aggregateVersion Int
+  eventType        String    @db.VarChar(150)
+  payload          Json
+  payloadHash      String    @db.Char(64)
+  idempotencyKey   String    @db.VarChar(200)
+  availableAt      DateTime  @default(now()) @db.Timestamptz(6)
+  publishedAt      DateTime? @db.Timestamptz(6)
+  attemptCount     Int       @default(0)
+  lastError        String?   @db.VarChar(1000)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, idempotencyKey])
+  @@unique([workspaceId, aggregateType, aggregateId, aggregateVersion])
+  @@index([publishedAt, availableAt])
+  @@map("outbox_events")
+}
+
+model InboxReceipt {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  consumer    String    @db.VarChar(150)
+  messageId   String    @db.VarChar(300)
+  payloadHash String    @db.Char(64)
+  receivedAt  DateTime  @default(now()) @db.Timestamptz(6)
+  processingAt DateTime @default(now()) @db.Timestamptz(6)
+  processedAt DateTime? @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, consumer, messageId])
+  @@index([workspaceId, processedAt])
+  @@map("inbox_receipts")
+}
+
+model BudgetReservation {
+  id             String       @id @default(uuid()) @db.Uuid
+  workspaceId    String       @db.Uuid
+  projectId      String       @db.Uuid
+  runId          String?      @db.Uuid
+  turnId         String?      @db.Uuid
+  provider       Provider
+  idempotencyKey String       @db.VarChar(200)
+  reservedMicros BigInt
+  actualMicros   BigInt?
+  status         BudgetStatus @default(RESERVED)
+  expiresAt      DateTime     @db.Timestamptz(6)
+  committedAt    DateTime?    @db.Timestamptz(6)
+  releasedAt     DateTime?    @db.Timestamptz(6)
+  createdAt      DateTime     @default(now()) @db.Timestamptz(6)
+
+  workspace Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  run       WorkflowRun?      @relation(fields: [workspaceId, projectId, runId], references: [workspaceId, projectId, id], onDelete: Cascade)
+  turn      ConversationTurn? @relation(fields: [workspaceId, projectId, turnId], references: [workspaceId, projectId, id], onDelete: Cascade)
+
+  @@unique([workspaceId, idempotencyKey])
+  @@index([workspaceId, status, expiresAt])
+  @@map("budget_reservations")
+}
+
+model UsageLedger {
+  id                         String   @id @default(uuid()) @db.Uuid
+  workspaceId                String   @db.Uuid
+  projectId                  String   @db.Uuid
+  runId                      String?  @db.Uuid
+  turnId                     String?  @db.Uuid
+  provider                   Provider
+  externalUsageId            String?  @db.VarChar(300)
+  model                      String   @db.VarChar(120)
+  operation                  String   @db.VarChar(150)
+  inputUnits                 BigInt   @default(0)
+  outputUnits                BigInt   @default(0)
+  inputRateMicrosPerMillion  BigInt?
+  outputRateMicrosPerMillion BigInt?
+  pricingVersion             String?  @db.VarChar(100)
+  costMicros                 BigInt
+  metadata                   Json     @default("{}")
+  occurredAt                 DateTime @db.Timestamptz(6)
+  createdAt                  DateTime @default(now()) @db.Timestamptz(6)
+
+  workspace Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  run       WorkflowRun?      @relation(fields: [workspaceId, projectId, runId], references: [workspaceId, projectId, id], onDelete: Cascade)
+  turn      ConversationTurn? @relation(fields: [workspaceId, projectId, turnId], references: [workspaceId, projectId, id], onDelete: Cascade)
+
+  @@unique([workspaceId, provider, externalUsageId])
+  @@index([workspaceId, occurredAt])
+  @@index([workspaceId, operation, occurredAt])
+  @@index([workspaceId, model, occurredAt])
+  @@map("usage_ledger")
+}
+
+model Approval {
+  id                 String         @id @default(uuid()) @db.Uuid
+  workspaceId        String         @db.Uuid
+  projectId          String         @db.Uuid
+  kind               ApprovalKind
+  status             ApprovalStatus @default(PENDING)
+  optimisticVersion  Int            @default(0)
+  payload            Json
+  payloadCanonical   String         @db.Text
+  payloadHash        String         @db.Char(64)
+  specVersionId      String?        @db.Uuid
+  artifactId         String?        @db.Uuid
+  upstreamArtifactId String?        @db.Uuid
+  decidedByUserId    String?
+  decisionReason     String?        @db.Text
+  decidedAt          DateTime?      @db.Timestamptz(6)
+  expiresAt          DateTime       @db.Timestamptz(6)
+  consumedAt         DateTime?      @db.Timestamptz(6)
+  createdAt          DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime       @updatedAt @db.Timestamptz(6)
+
+  project          Project              @relation(fields: [workspaceId, projectId], references: [workspaceId, id], onDelete: Cascade)
+  specVersion      ProductSpecVersion?  @relation(fields: [workspaceId, projectId, specVersionId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  artifact         BuildArtifact?       @relation("ApprovalArtifact", fields: [workspaceId, projectId, artifactId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  upstreamArtifact BuildArtifact?       @relation("ApprovalUpstreamArtifact", fields: [workspaceId, projectId, upstreamArtifactId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  grants           ProjectSecretGrant[]
+
+  @@unique([workspaceId, projectId, id])
+  @@unique([workspaceId, projectId, payloadHash])
+  @@index([workspaceId, projectId, status, expiresAt])
+  @@map("approvals")
+}
+
+model BuildArtifact {
+  id             String       @id @default(uuid()) @db.Uuid
+  workspaceId    String       @db.Uuid
+  projectId      String       @db.Uuid
+  runId          String       @db.Uuid
+  kind           ArtifactKind
+  objectKey      String       @db.VarChar(1024)
+  artifactHash   String       @db.Char(64)
+  manifestHash   String       @db.Char(64)
+  byteSize       BigInt
+  fileCount      Int
+  signature      String?      @db.Text
+  signatureKeyId String?      @db.VarChar(500)
+  expiresAt      DateTime?    @db.Timestamptz(6)
+  createdAt      DateTime     @default(now()) @db.Timestamptz(6)
+
+  run                  WorkflowRun         @relation(fields: [workspaceId, projectId, runId], references: [workspaceId, projectId, id], onDelete: Cascade)
+  verification         VerificationReport?
+  deployments          Deployment[]
+  approvals            Approval[]          @relation("ApprovalArtifact")
+  upstreamForApprovals Approval[]          @relation("ApprovalUpstreamArtifact")
+
+  @@unique([workspaceId, projectId, id])
+  @@unique([workspaceId, artifactHash, kind])
+  @@index([workspaceId, projectId, createdAt(sort: Desc)])
+  @@map("build_artifacts")
+}
+
+model VerificationReport {
+  id             String             @id @default(uuid()) @db.Uuid
+  workspaceId    String             @db.Uuid
+  projectId      String             @db.Uuid
+  artifactId     String             @unique @db.Uuid
+  status         VerificationStatus @default(PENDING)
+  verifierImage  String             @db.VarChar(500)
+  report         Json
+  reportHash     String             @db.Char(64)
+  signature      String             @db.Text
+  signatureKeyId String             @db.VarChar(500)
+  verifiedAt     DateTime?          @db.Timestamptz(6)
+  expiresAt      DateTime?          @db.Timestamptz(6)
+  createdAt      DateTime           @default(now()) @db.Timestamptz(6)
+
+  artifact BuildArtifact @relation(fields: [workspaceId, projectId, artifactId], references: [workspaceId, projectId, id], onDelete: Cascade)
+
+  @@unique([workspaceId, projectId, artifactId])
+  @@index([workspaceId, projectId, status])
+  @@map("verification_reports")
+}
+
+model RepositoryBinding {
+  id                   String           @id @default(uuid()) @db.Uuid
+  workspaceId          String           @db.Uuid
+  projectId            String           @unique @db.Uuid
+  provider             Provider         @default(GITHUB)
+  installationId       String           @db.VarChar(300)
+  externalRepositoryId String?          @db.VarChar(300)
+  owner                String           @db.VarChar(200)
+  name                 String           @db.VarChar(200)
+  visibility           String           @default("private") @db.VarChar(20)
+  defaultBranch        String           @default("main") @db.VarChar(200)
+  status               RepositoryStatus @default(PENDING)
+  optimisticVersion    Int              @default(0)
+  lastCommitSha        String?          @db.VarChar(64)
+  createdAt            DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime         @updatedAt @db.Timestamptz(6)
+
+  project Project @relation(fields: [workspaceId, projectId], references: [workspaceId, id], onDelete: Cascade)
+
+  @@unique([workspaceId, projectId])
+  @@unique([workspaceId, owner, name])
+  @@index([workspaceId, status])
+  @@map("repository_bindings")
+}
+
+model Deployment {
+  id                   String           @id @default(uuid()) @db.Uuid
+  workspaceId          String           @db.Uuid
+  projectId            String           @db.Uuid
+  artifactId           String           @db.Uuid
+  previousDeploymentId String?          @db.Uuid
+  externalProjectId    String           @db.VarChar(300)
+  externalDeploymentId String           @db.VarChar(300)
+  teamId               String           @db.VarChar(300)
+  environment          String           @db.VarChar(50)
+  status               DeploymentStatus @default(QUEUED)
+  optimisticVersion    Int              @default(0)
+  artifactHash         String           @db.Char(64)
+  url                  String?          @db.Text
+  healthCheckUrl       String?          @db.Text
+  healthFailure        String?          @db.VarChar(1000)
+  lastKnownGood        Boolean          @default(false)
+  promotedAt           DateTime?        @db.Timestamptz(6)
+  rolledBackAt         DateTime?        @db.Timestamptz(6)
+  createdAt            DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime         @updatedAt @db.Timestamptz(6)
+
+  project                Project              @relation(fields: [workspaceId, projectId], references: [workspaceId, id], onDelete: Cascade)
+  artifact               BuildArtifact        @relation(fields: [workspaceId, projectId, artifactId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  previousDeployment     Deployment?          @relation("DeploymentHistory", fields: [workspaceId, projectId, previousDeploymentId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  replacementDeployments Deployment[]         @relation("DeploymentHistory")
+  grants                 ProjectSecretGrant[]
+
+  @@unique([workspaceId, projectId, id])
+  @@unique([workspaceId, externalDeploymentId])
+  @@index([workspaceId, projectId, status, createdAt(sort: Desc)])
+  @@index([workspaceId, projectId, lastKnownGood])
+  @@map("deployments")
+}
+
+model ProjectSecretGrant {
+  id              String      @id @default(uuid()) @db.Uuid
+  workspaceId     String      @db.Uuid
+  projectId       String      @db.Uuid
+  deploymentId    String?     @db.Uuid
+  secretVersionId String      @db.Uuid
+  approvalId      String      @db.Uuid
+  status          GrantStatus @default(PENDING)
+  grantedAt       DateTime?   @db.Timestamptz(6)
+  revokedAt       DateTime?   @db.Timestamptz(6)
+  createdAt       DateTime    @default(now()) @db.Timestamptz(6)
+
+  deployment    Deployment?   @relation(fields: [workspaceId, projectId, deploymentId], references: [workspaceId, projectId, id], onDelete: Cascade)
+  secretVersion SecretVersion @relation(fields: [workspaceId, projectId, secretVersionId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  approval      Approval      @relation(fields: [workspaceId, projectId, approvalId], references: [workspaceId, projectId, id], onDelete: Restrict)
+
+  @@unique([projectId, deploymentId, secretVersionId])
+  @@unique([projectId, approvalId, secretVersionId])
+  @@index([workspaceId, projectId, status])
+  @@map("project_secret_grants")
+}
+
+model Schedule {
+  id                  String         @id @default(uuid()) @db.Uuid
+  workspaceId         String         @db.Uuid
+  projectId           String         @db.Uuid
+  kind                ScheduleKind
+  status              ScheduleStatus @default(PAUSED)
+  intervalMinutes     Int
+  timeZone            String         @default("Asia/Singapore") @db.VarChar(100)
+  optimisticVersion   Int            @default(0)
+  nextRunAt           DateTime?      @db.Timestamptz(6)
+  lastEnqueuedAt      DateTime?      @db.Timestamptz(6)
+  lastCompletedAt     DateTime?      @db.Timestamptz(6)
+  consecutiveFailures Int            @default(0)
+  backoffUntil        DateTime?      @db.Timestamptz(6)
+  blockerCode         String?        @db.VarChar(100)
+  blockerMessage      String?        @db.VarChar(500)
+  blockedAt           DateTime?      @db.Timestamptz(6)
+  createdAt           DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime       @updatedAt @db.Timestamptz(6)
+
+  project Project       @relation(fields: [workspaceId, projectId], references: [workspaceId, id], onDelete: Cascade)
+  runs    WorkflowRun[]
+
+  @@unique([workspaceId, projectId, id])
+  @@unique([projectId, kind])
+  @@index([status, nextRunAt])
+  @@map("schedules")
+}
+
+model BillingAccount {
+  id                       String                    @id @default(uuid()) @db.Uuid
+  workspaceId              String                    @unique @db.Uuid
+  stripeCustomerId         String?                   @unique @db.VarChar(255)
+  stripeSubscriptionId     String?                   @unique @db.VarChar(255)
+  tier                     BillingTier?
+  catalogKey               String?                   @db.VarChar(100)
+  stripePriceId            String?                   @db.VarChar(255)
+  status                   BillingSubscriptionStatus @default(INACTIVE)
+  cancelAtPeriodEnd        Boolean                   @default(false)
+  currentPeriodStart       DateTime?                 @db.Timestamptz(6)
+  currentPeriodEnd         DateTime?                 @db.Timestamptz(6)
+  paidThroughAt            DateTime?                 @db.Timestamptz(6)
+  lastStripeEventCreatedAt DateTime?                 @db.Timestamptz(6)
+  lastStripeEventId        String?                   @db.VarChar(255)
+  createdAt                DateTime                  @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime                  @updatedAt @db.Timestamptz(6)
+
+  workspace Workspace                   @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  checkouts BillingCheckoutSession[]
+  periods   BillingSubscriptionPeriod[]
+
+  @@unique([workspaceId, id])
+  @@index([status, paidThroughAt])
+  @@map("billing_accounts")
+}
+
+model BillingCheckoutSession {
+  id                      String                @id @default(uuid()) @db.Uuid
+  workspaceId             String                @db.Uuid
+  billingAccountId        String?               @db.Uuid
+  kind                    BillingCheckoutKind
+  status                  BillingCheckoutStatus @default(PENDING)
+  catalogKey              String                @db.VarChar(100)
+  currency                String                @db.Char(3)
+  quotedAmountMinor       BigInt
+  quotedCredits           BigInt                @default(0)
+  integrationIdentifier   String                @unique @db.VarChar(100)
+  requestIdempotencyKey   String                @db.VarChar(200)
+  stripeCheckoutSessionId String?               @unique @db.VarChar(255)
+  stripePaymentIntentId   String?               @unique @db.VarChar(255)
+  stripeSubscriptionId    String?               @unique @db.VarChar(255)
+  stripeCustomerId        String?               @db.VarChar(255)
+  expiresAt               DateTime?             @db.Timestamptz(6)
+  completedAt             DateTime?             @db.Timestamptz(6)
+  failedAt                DateTime?             @db.Timestamptz(6)
+  createdAt               DateTime              @default(now()) @db.Timestamptz(6)
+  updatedAt               DateTime              @updatedAt @db.Timestamptz(6)
+
+  workspace      Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  billingAccount BillingAccount? @relation(fields: [workspaceId, billingAccountId], references: [workspaceId, id], onDelete: Restrict)
+  creditLots     CreditLot[]
+  ledgerEntries  CreditLedger[]
+
+  @@unique([workspaceId, id])
+  @@unique([workspaceId, requestIdempotencyKey])
+  @@index([workspaceId, status, createdAt(sort: Desc)])
+  @@map("billing_checkout_sessions")
+}
+
+model BillingSubscriptionPeriod {
+  id                   String    @id @default(uuid()) @db.Uuid
+  workspaceId          String    @db.Uuid
+  billingAccountId     String    @db.Uuid
+  stripeSubscriptionId String    @db.VarChar(255)
+  stripeInvoiceId      String    @unique @db.VarChar(255)
+  periodStart          DateTime  @db.Timestamptz(6)
+  periodEnd            DateTime  @db.Timestamptz(6)
+  includedCredits      BigInt
+  grantedAt            DateTime  @default(now()) @db.Timestamptz(6)
+  expiredAt            DateTime? @db.Timestamptz(6)
+  createdAt            DateTime  @default(now()) @db.Timestamptz(6)
+
+  workspace          Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  billingAccount     BillingAccount      @relation(fields: [workspaceId, billingAccountId], references: [workspaceId, id], onDelete: Restrict)
+  sourceForAccounts  CreditAccount[]     @relation("IncludedBalancePeriod")
+  creditReservations CreditReservation[] @relation("IncludedReservationPeriod")
+  ledgerEntries      CreditLedger[]
+
+  @@unique([workspaceId, id])
+  @@unique([stripeSubscriptionId, periodStart, periodEnd])
+  @@index([workspaceId, periodEnd, expiredAt])
+  @@map("billing_subscription_periods")
+}
+
+model CreditAccount {
+  id                     String    @id @default(uuid()) @db.Uuid
+  workspaceId            String    @unique @db.Uuid
+  promotionalAvailable   BigInt    @default(0)
+  promotionalHeld        BigInt    @default(0)
+  includedAvailable      BigInt    @default(0)
+  includedHeld           BigInt    @default(0)
+  purchasedAvailable     BigInt    @default(0)
+  purchasedHeld          BigInt    @default(0)
+  includedSourcePeriodId String?   @db.Uuid
+  promotionalGrantedAt   DateTime? @db.Timestamptz(6)
+  optimisticVersion      Int       @default(0)
+  createdAt              DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime  @updatedAt @db.Timestamptz(6)
+
+  workspace            Workspace                  @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  includedSourcePeriod BillingSubscriptionPeriod? @relation("IncludedBalancePeriod", fields: [workspaceId, includedSourcePeriodId], references: [workspaceId, id], onDelete: Restrict)
+  reservations         CreditReservation[]
+  creditLots           CreditLot[]
+  codeRedemptions      CreditCodeRedemption[]
+  ledgerEntries        CreditLedger[]
+
+  @@unique([workspaceId, id])
+  @@map("credit_accounts")
+}
+
+model CreditReservation {
+  id                     String                  @id @default(uuid()) @db.Uuid
+  workspaceId            String                  @db.Uuid
+  projectId              String                  @db.Uuid
+  runId                  String?                 @db.Uuid
+  turnId                 String?                 @db.Uuid
+  runAttempt             Int
+  creditAccountId        String                  @db.Uuid
+  includedSourcePeriodId String?                 @db.Uuid
+  operation              String                  @db.VarChar(50)
+  pricingVersion         String                  @db.VarChar(50)
+  quotedCredits          BigInt
+  includedCredits        BigInt                  @default(0)
+  promotionalCredits     BigInt                  @default(0)
+  purchasedCredits       BigInt                  @default(0)
+  status                 CreditReservationStatus @default(HELD)
+  heldAt                 DateTime                @default(now()) @db.Timestamptz(6)
+  settledAt              DateTime?               @db.Timestamptz(6)
+  releasedAt             DateTime?               @db.Timestamptz(6)
+  createdAt              DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime                @updatedAt @db.Timestamptz(6)
+
+  workspace            Workspace                        @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  run                  WorkflowRun?                     @relation(fields: [workspaceId, projectId, runId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  turn                 ConversationTurn?                @relation(fields: [workspaceId, projectId, turnId], references: [workspaceId, projectId, id], onDelete: Restrict)
+  creditAccount        CreditAccount                    @relation(fields: [workspaceId, creditAccountId], references: [workspaceId, id], onDelete: Restrict)
+  includedSourcePeriod BillingSubscriptionPeriod?       @relation("IncludedReservationPeriod", fields: [workspaceId, includedSourcePeriodId], references: [workspaceId, id], onDelete: Restrict)
+  lotAllocations       CreditReservationLotAllocation[]
+  ledgerEntries        CreditLedger[]
+
+  @@unique([workspaceId, id])
+  @@unique([runId, runAttempt])
+  @@unique([turnId])
+  @@index([workspaceId, status, heldAt])
+  @@map("credit_reservations")
+}
+
+model CreditLot {
+  id                String    @id @default(uuid()) @db.Uuid
+  workspaceId       String    @db.Uuid
+  creditAccountId   String    @db.Uuid
+  checkoutSessionId String?   @unique @db.Uuid
+  stripeEventId     String?   @db.VarChar(255)
+  externalReference String    @unique @db.VarChar(300)
+  originalCredits   BigInt
+  availableCredits  BigInt
+  heldCredits       BigInt    @default(0)
+  purchasedAt       DateTime  @db.Timestamptz(6)
+  expiresAt         DateTime  @db.Timestamptz(6)
+  expiredAt         DateTime? @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+
+  workspace       Workspace                        @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  creditAccount   CreditAccount                    @relation(fields: [workspaceId, creditAccountId], references: [workspaceId, id], onDelete: Restrict)
+  checkoutSession BillingCheckoutSession?          @relation(fields: [workspaceId, checkoutSessionId], references: [workspaceId, id], onDelete: Restrict)
+  stripeEvent     StripeEvent?                     @relation(fields: [stripeEventId], references: [id], onDelete: Restrict)
+  allocations     CreditReservationLotAllocation[]
+  ledgerEntries   CreditLedger[]
+
+  @@unique([workspaceId, id])
+  @@index([workspaceId, expiresAt, expiredAt])
+  @@map("credit_lots")
+}
+
+model CreditReservationLotAllocation {
+  id            String @id @default(uuid()) @db.Uuid
+  workspaceId   String @db.Uuid
+  reservationId String @db.Uuid
+  creditLotId   String @db.Uuid
+  amount        BigInt
+
+  reservation CreditReservation @relation(fields: [workspaceId, reservationId], references: [workspaceId, id], onDelete: Restrict)
+  creditLot   CreditLot         @relation(fields: [workspaceId, creditLotId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@unique([reservationId, creditLotId])
+  @@index([creditLotId])
+  @@map("credit_reservation_lot_allocations")
+}
+
+model CreditCode {
+  id                 String    @id @default(uuid()) @db.Uuid
+  codeHash           String    @unique @db.Char(64)
+  displaySuffix      String    @db.VarChar(8)
+  label              String    @db.VarChar(120)
+  grantCredits       BigInt
+  maxRedemptions     Int       @default(1)
+  currentRedemptions Int       @default(0)
+  expiresAt          DateTime  @db.Timestamptz(6)
+  disabledAt         DateTime? @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @db.Timestamptz(6)
+
+  redemptions CreditCodeRedemption[]
+
+  @@index([expiresAt, disabledAt])
+  @@map("credit_codes")
+}
+
+model CreditCodeRedemption {
+  id              String   @id @default(uuid()) @db.Uuid
+  creditCodeId    String   @db.Uuid
+  workspaceId     String   @db.Uuid
+  userId          String
+  creditAccountId String   @db.Uuid
+  grantCredits    BigInt
+  idempotencyKey  String   @db.VarChar(200)
+  redeemedAt      DateTime @default(now()) @db.Timestamptz(6)
+
+  creditCode    CreditCode     @relation(fields: [creditCodeId], references: [id], onDelete: Restrict)
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  user          User           @relation(fields: [workspaceId, userId], references: [workspaceId, id], onDelete: Restrict)
+  creditAccount CreditAccount  @relation(fields: [workspaceId, creditAccountId], references: [workspaceId, id], onDelete: Restrict)
+  ledgerEntries CreditLedger[]
+
+  @@unique([workspaceId, id])
+  @@unique([creditCodeId, workspaceId])
+  @@unique([workspaceId, idempotencyKey])
+  @@index([workspaceId, redeemedAt(sort: Desc)])
+  @@map("credit_code_redemptions")
+}
+
+model CreditLedger {
+  id                     String           @id @default(uuid()) @db.Uuid
+  workspaceId            String           @db.Uuid
+  creditAccountId        String           @db.Uuid
+  reservationId          String?          @db.Uuid
+  subscriptionPeriodId   String?          @db.Uuid
+  checkoutSessionId      String?          @db.Uuid
+  creditLotId            String?          @db.Uuid
+  creditCodeRedemptionId String?          @db.Uuid
+  stripeEventId          String?          @db.VarChar(255)
+  type                   CreditLedgerType
+  bucket                 CreditBucket
+  amount                 BigInt
+  availableDelta         BigInt
+  heldDelta              BigInt
+  balanceAfterAvailable  BigInt
+  balanceAfterHeld       BigInt
+  idempotencyKey         String           @db.VarChar(200)
+  externalReference      String?          @unique @db.VarChar(300)
+  metadata               Json             @default("{}")
+  occurredAt             DateTime         @db.Timestamptz(6)
+  createdAt              DateTime         @default(now()) @db.Timestamptz(6)
+
+  workspace            Workspace                  @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  creditAccount        CreditAccount              @relation(fields: [workspaceId, creditAccountId], references: [workspaceId, id], onDelete: Restrict)
+  reservation          CreditReservation?         @relation(fields: [workspaceId, reservationId], references: [workspaceId, id], onDelete: Restrict)
+  subscriptionPeriod   BillingSubscriptionPeriod? @relation(fields: [workspaceId, subscriptionPeriodId], references: [workspaceId, id], onDelete: Restrict)
+  checkoutSession      BillingCheckoutSession?    @relation(fields: [workspaceId, checkoutSessionId], references: [workspaceId, id], onDelete: Restrict)
+  creditLot            CreditLot?                 @relation(fields: [workspaceId, creditLotId], references: [workspaceId, id], onDelete: Restrict)
+  creditCodeRedemption CreditCodeRedemption?      @relation(fields: [workspaceId, creditCodeRedemptionId], references: [workspaceId, id], onDelete: Restrict)
+  stripeEvent          StripeEvent?               @relation(fields: [stripeEventId], references: [id], onDelete: Restrict)
+
+  @@unique([workspaceId, id])
+  @@unique([workspaceId, idempotencyKey])
+  @@index([workspaceId, occurredAt(sort: Desc)])
+  @@index([reservationId])
+  @@map("credit_ledger")
+}
+
+model StripeEvent {
+  id             String            @id @db.VarChar(255)
+  workspaceId    String?           @db.Uuid
+  type           String            @db.VarChar(150)
+  mode           StripeEventMode
+  apiVersion     String?           @db.VarChar(50)
+  payloadHash    String            @db.Char(64)
+  payload        Json
+  status         StripeEventStatus @default(RECEIVED)
+  eventCreatedAt DateTime          @db.Timestamptz(6)
+  processedAt    DateTime?         @db.Timestamptz(6)
+  failureCode    String?           @db.VarChar(100)
+  failureMessage String?           @db.VarChar(1000)
+  receivedAt     DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime          @updatedAt @db.Timestamptz(6)
+
+  workspace     Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  creditLots    CreditLot[]
+  ledgerEntries CreditLedger[]
+
+  @@index([workspaceId, status, receivedAt])
+  @@index([status, receivedAt])
+  @@map("stripe_events")
+}
+
+model ActivityEvent {
+  id          String           @id @default(uuid()) @db.Uuid
+  workspaceId String           @db.Uuid
+  projectId   String?          @db.Uuid
+  runId       String?          @db.Uuid
+  sequence    BigInt           @default(autoincrement())
+  type        String           @db.VarChar(150)
+  severity    ActivitySeverity @default(INFO)
+  message     String           @db.VarChar(4000)
+  data        Json             @default("{}")
+  expiresAt   DateTime         @db.Timestamptz(6)
+  createdAt   DateTime         @default(now()) @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, sequence])
+  @@index([workspaceId, projectId, createdAt(sort: Desc)])
+  @@index([workspaceId, runId, sequence])
+  @@index([expiresAt])
+  @@map("activity_events")
+}
+
+model AuditEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  actorUserId String?
+  action      String   @db.VarChar(150)
+  targetType  String   @db.VarChar(100)
+  targetId    String   @db.VarChar(128)
+  requestId   String?  @db.VarChar(200)
+  ipHash      String?  @db.Char(64)
+  metadata    Json     @default("{}")
+  expiresAt   DateTime @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([expiresAt])
+  @@map("audit_events")
+}
+
+model ProjectConversation {
+  id                String   @id @default(uuid()) @db.Uuid
+  workspaceId       String   @db.Uuid
+  projectId         String   @db.Uuid
+  title             String   @db.VarChar(120)
+  summary           String?  @db.Text
+  optimisticVersion Int      @default(0)
+  archivedAt        DateTime? @db.Timestamptz(6)
+  lastActivityAt    DateTime @default(now()) @db.Timestamptz(6)
+  createdAt         DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(6)
+
+  workspace Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project                   @relation(fields: [workspaceId, projectId], references: [workspaceId, id], onDelete: Cascade)
+  messages  ConversationMessage[]
+  turns     ConversationTurn[]
+  actions   ConversationAction[]
+
+  @@unique([workspaceId, projectId, id])
+  @@index([workspaceId, projectId, archivedAt, lastActivityAt(sort: Desc)])
+  @@map("project_conversations")
+}
+
+model ConversationMessage {
+  id             String                  @id @default(uuid()) @db.Uuid
+  workspaceId    String                  @db.Uuid
+  projectId      String                  @db.Uuid
+  conversationId String                  @db.Uuid
+  sequence       Int
+  role           ConversationMessageRole
+  authorUserId   String?
+  content        String                  @db.Text
+  contentHash    String                  @db.Char(64)
+  metadata       Json                    @default("{}")
+  createdAt      DateTime                @default(now()) @db.Timestamptz(6)
+
+  conversation ProjectConversation @relation(fields: [workspaceId, projectId, conversationId], references: [workspaceId, projectId, id], onDelete: Cascade)
+
+  @@unique([workspaceId, projectId, conversationId, sequence])
+  @@unique([workspaceId, projectId, id])
+  @@index([workspaceId, projectId, conversationId, createdAt])
+  @@map("conversation_messages")
+}
+
+model ConversationTurn {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  workspaceId         String                 @db.Uuid
+  projectId           String                 @db.Uuid
+  conversationId      String                 @db.Uuid
+  ownerMessageId      String                 @db.Uuid
+  status              ConversationTurnStatus @default(QUEUED)
+  stateVersion        Int                    @default(0)
+  idempotencyKey      String                 @db.VarChar(200)
+  authorityMode       ProjectAuthorityMode
+  projectVersion      Int
+  modelVersion        String?                @db.VarChar(120)
+  promptVersion       String?                @db.VarChar(100)
+  toolsetVersion      String?                @db.VarChar(100)
+  policyVersion       String?                @db.VarChar(100)
+  budgetCeilingMicros BigInt                 @default(0)
+  actualCostMicros    BigInt                 @default(0)
+  partialResponse     String?                @db.Text
+  cancelRequestedAt   DateTime?              @db.Timestamptz(6)
+  startedAt           DateTime?              @db.Timestamptz(6)
+  finishedAt          DateTime?              @db.Timestamptz(6)
+  failureCode         String?                @db.VarChar(100)
+  failureMessage      String?                @db.VarChar(1000)
+  createdAt           DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime               @updatedAt @db.Timestamptz(6)
+
+  conversation ProjectConversation      @relation(fields: [workspaceId, projectId, conversationId], references: [workspaceId, projectId, id], onDelete: Cascade)
+  events              ConversationTurnEvent[]
+  actions             ConversationAction[]
+  lease               ConversationTurnLease?
+  budgetReservations  BudgetReservation[]
+  usageEntries        UsageLedger[]
+  creditReservations  CreditReservation[]
+
+  @@unique([workspaceId, idempotencyKey])
+  @@unique([workspaceId, projectId, id])
+  @@index([workspaceId, projectId, conversationId, status, createdAt(sort: Desc)])
+  @@map("conversation_turns")
+}
+
+model ConversationTurnEvent {
+  id        String                @id @default(uuid()) @db.Uuid
+  workspaceId String               @db.Uuid
+  projectId String                 @db.Uuid
+  turnId    String                 @db.Uuid
+  sequence  BigInt                 @default(autoincrement())
+  type      ConversationEventType
+  payload   Json                   @default("{}")
+  expiresAt DateTime?              @db.Timestamptz(6)
+  createdAt DateTime               @default(now()) @db.Timestamptz(6)
+
+  turn ConversationTurn @relation(fields: [workspaceId, projectId, turnId], references: [workspaceId, projectId, id], onDelete: Cascade)
+
+  @@unique([workspaceId, turnId, sequence])
+  @@index([workspaceId, projectId, turnId, sequence])
+  @@index([expiresAt])
+  @@map("conversation_turn_events")
+}
+
+model ConversationAction {
+  id                     String                   @id @default(uuid()) @db.Uuid
+  workspaceId            String                   @db.Uuid
+  projectId              String                   @db.Uuid
+  conversationId         String                   @db.Uuid
+  turnId                 String?                  @db.Uuid
+  command                String                   @db.VarChar(100)
+  schemaVersion          String                   @db.VarChar(50)
+  payload                Json                     @default("{}")
+  payloadHash            String                   @db.Char(64)
+  expectedProjectVersion Int
+  risk                   ConversationActionRisk
+  status                 ConversationActionStatus @default(PROPOSED)
+  diff                   Json                     @default("{}")
+  expiresAt              DateTime                 @db.Timestamptz(6)
+  result                 Json?
+  auditEventId           String?                  @db.Uuid
+  createdAt              DateTime                 @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime                 @updatedAt @db.Timestamptz(6)
+
+  conversation ProjectConversation @relation(fields: [workspaceId, projectId, conversationId], references: [workspaceId, projectId, id], onDelete: Cascade)
+  turn         ConversationTurn?   @relation(fields: [workspaceId, projectId, turnId], references: [workspaceId, projectId, id], onDelete: Restrict)
+
+  @@unique([workspaceId, projectId, id])
+  @@index([workspaceId, projectId, conversationId, status, expiresAt])
+  @@map("conversation_actions")
+}
+
+model ConversationTurnLease {
+  id           String    @id @default(uuid()) @db.Uuid
+  workspaceId  String    @db.Uuid
+  projectId    String    @db.Uuid
+  turnId       String    @unique @db.Uuid
+  ownerId      String    @db.VarChar(200)
+  fencingToken BigInt
+  acquiredAt   DateTime  @default(now()) @db.Timestamptz(6)
+  expiresAt    DateTime  @db.Timestamptz(6)
+  releasedAt   DateTime? @db.Timestamptz(6)
+
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  turn      ConversationTurn @relation(fields: [workspaceId, projectId, turnId], references: [workspaceId, projectId, id], onDelete: Cascade)
+
+  @@unique([workspaceId, projectId, turnId])
+  @@index([workspaceId, expiresAt, releasedAt])
+  @@map("conversation_turn_leases")
+}

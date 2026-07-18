@@ -27,6 +27,14 @@ jobs:
       - run: pnpm prisma:generate
       - run: pnpm exec prisma validate
       - run: pnpm typecheck
+      - run: pnpm --dir backend install --frozen-lockfile --ignore-scripts
+      - run: pnpm --dir backend prisma:generate
+      - run: pnpm --dir backend exec prisma validate
+      - run: pnpm --dir backend typecheck
+      - run: pnpm --dir backend build
+        env:
+          DEMO_MODE: "true"
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build

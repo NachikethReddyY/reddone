@@ -1,0 +1,26 @@
+packages:
+  - "."
+
+allowBuilds:
+  '@prisma/engines': true
+  '@swc/core': true
+  cbor-extract: true
+  esbuild: true
+  prisma: true
+  protobufjs: true
+  sharp: true
+  unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - '@aws-sdk/client-kms@3.1085.0'
+  - '@aws-sdk/client-s3@3.1085.0'
+  - '@aws-sdk/credential-providers@3.1085.0'
+  - '@aws-sdk/s3-request-presigner@3.1085.0'
+  - '@daytona/api-client@0.196.0'
+  - '@daytona/sdk@0.196.0'
+  - '@daytona/toolbox-api-client@0.196.0'
+
+onlyBuiltDependencies:
+  - "@prisma/engines"
+  - "prisma"
+  - "sharp"
