@@ -27,7 +27,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@daytona/sdk": "0.196.0",
+    "@daytona/sdk": "0.199.0",
     "@google-cloud/kms": "5.6.0",
     "@google-cloud/storage": "7.21.0",
     "@octokit/auth-app": "8.2.0",
