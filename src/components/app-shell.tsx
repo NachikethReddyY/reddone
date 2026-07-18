@@ -36,6 +36,7 @@ import { AccountAvatar } from "@/components/account-avatar";
 import { Brand } from "@/components/brand";
 import { Dialog, Sheet } from "@/components/ui";
 import { ThemeToggle } from "@/components/theme-provider";
+import { signOutOwnerSession } from "@/features/auth/sign-out";
 
 type ShellProject = { id: string; name: string; detail: string };
 type NavigationItem = { href: string; label: string; icon: LucideIcon; detail: string };
@@ -471,12 +472,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     setSigningOut(true);
     setSignOutError("");
     try {
-      const response = await fetch("/api/auth/sign-out", {
-        method: "POST",
-        headers: { accept: "application/json" },
-        credentials: "same-origin",
-      });
-      if (!response.ok) throw new Error(`Sign out failed with status ${response.status}.`);
+      await signOutOwnerSession();
       window.location.assign("/sign-in");
     } catch {
       setSignOutError("Unable to sign out. Check the connection and try again.");

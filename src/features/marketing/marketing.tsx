@@ -64,7 +64,7 @@ function Header({ mode }: { mode: DeploymentMode }) {
         <span><strong>ReDDone</strong><small>Evidence to software</small></span>
       </Link>
       <nav aria-label="Marketing navigation" className={styles.nav}>
-        <Link className={styles.inviteLink} href="/beta#invite">Have an invite?</Link>
+        {mode === "public" ? <Link className={styles.inviteLink} href="/beta#invite">Have an invite?</Link> : null}
         <Link href="/#workflow">Workflow</Link>
         <Link href="/#safety">Safety</Link>
       </nav>
@@ -83,7 +83,7 @@ function Footer({ mode }: { mode: DeploymentMode }) {
     <footer className={styles.footer}>
       <div><BrandMark size={32} /><p><strong>ReDDone</strong><span>Evidence-backed product work with an owner-controlled release boundary.</span></p></div>
       <nav aria-label="Footer navigation">
-        <Link href="/beta#invite">Redeem invite</Link>
+        {mode === "public" ? <Link href="/beta#invite">Redeem invite</Link> : null}
         {cta.href !== "/sign-in" ? <Link href="/sign-in">Sign in</Link> : null}
         <Link href={cta.href}>{cta.label}</Link>
       </nav>
@@ -153,7 +153,7 @@ export function HomeMarketing({ mode }: { mode: DeploymentMode }) {
         </section>
 
         <section className={styles.finalCta}>
-          <BrandMark size={48} /><div><p>Private beta · access is opening gradually</p><h2>Bring an invite, or join the waitlist.</h2></div><Link className={styles.primaryCta} href={cta.href}>{cta.label}<Icon name="arrow-right" size={18} /></Link>
+          <BrandMark size={48} /><div><p>{mode === "hackathon" ? "Hackathon access · event code required for new participants" : "Private beta · access is opening gradually"}</p><h2>{mode === "hackathon" ? "Sign in to return, or join the event with GitHub." : "Bring an invite, or join the waitlist."}</h2></div><Link className={styles.primaryCta} href={cta.href}>{cta.label}<Icon name="arrow-right" size={18} /></Link>
         </section>
       </main>
     </MarketingFrame>

@@ -45,6 +45,29 @@ describe("authentication forms", () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/account?section=sessions"));
   });
 
+  it("lets returning hackathon participants sign in with email and password", async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ url: "/projects" }), { status: 200, headers: { "content-type": "application/json" } }));
+    render(<SignInForm deploymentMode="hackathon" returnTo="/projects" />);
+
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Sign in or join the hackathon.");
+    expect(screen.getByLabelText("Hackathon registration code")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Owner email"), { target: { value: "owner@example.com" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "correct horse battery staple" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in with email" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    expect(fetch).toHaveBeenCalledWith("/api/auth/sign-in/email", expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({
+        email: "owner@example.com",
+        password: "correct horse battery staple",
+        rememberMe: false,
+        callbackURL: "/projects",
+      }),
+    }));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/projects"));
+  });
+
   it("shows the demo link only in demo mode", () => {
     const { rerender } = render(<SignInForm deploymentMode="private" />);
     expect(screen.queryByRole("link", { name: /populated UI demo/i })).not.toBeInTheDocument();

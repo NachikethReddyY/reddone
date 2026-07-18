@@ -12,6 +12,7 @@ import {
 } from "@/contracts/account";
 import { ThemeToggle } from "@/components/theme-provider";
 import { Alert, Button, PageState, SectionHeading, Surface } from "@/components/ui";
+import { signOutOwnerSession } from "@/features/auth/sign-out";
 import { compressAvatarFile } from "./avatar-image";
 import styles from "./account.module.css";
 
@@ -186,9 +187,8 @@ export function AccountPanel() {
   async function signOut() {
     setBusy("sign-out"); setError("");
     try {
-      const response = await fetch("/api/v1/account/sign-out", { method: "POST", credentials: "same-origin", headers: mutationHeaders(), body: "{}" });
-      if (!response.ok) throw new Error(await responseMessage(response, "Unable to sign out."));
-      window.location.assign("/");
+      await signOutOwnerSession();
+      window.location.assign("/sign-in");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to sign out.");
       setBusy("");
