@@ -23,6 +23,7 @@ jobs:
           node-version: 24.18.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm audit --audit-level=low
       - run: pnpm prisma:generate
       - run: pnpm exec prisma validate
       - run: pnpm typecheck
