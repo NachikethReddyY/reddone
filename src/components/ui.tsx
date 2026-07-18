@@ -72,7 +72,7 @@ export function StatusBadge({ children, tone = "neutral", pulse = false }: { chi
 }
 
 export function SourceBadge({ mode }: { mode: "fixture" | "import" | "live" }) {
-  const labels = { fixture: "Fixture data", import: "Authorized import", live: "Approved live API" };
+  const labels = { fixture: "Fixture data", import: "Authorized import", live: "Approved live source" };
   return <span className={`source-badge source-${mode}`}><Icon name={mode === "live" ? "activity" : mode === "import" ? "file" : "database"} size={13} />{labels[mode]}</span>;
 }
 

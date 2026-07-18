@@ -23,6 +23,34 @@ describe("shared contracts", () => {
     });
   });
 
+  it("normalizes and bounds the persisted Oxylabs Reddit collection scope", () => {
+    const config = ProjectConfigSchema.parse({
+      marketLabel: "Freelancer operations",
+      researchContext: "Find recurring invoice collection pain.",
+      researchMode: "live_reddit",
+      sourceLabels: ["r/freelance"],
+      redditWebScrape: {
+        subreddit: "r/freelance",
+        keywords: "late invoice",
+        sort: "comments",
+        time: "month",
+        agentCount: 4,
+      },
+    });
+
+    expect(config.redditWebScrape).toEqual({
+      subreddit: "freelance",
+      keywords: "late invoice",
+      sort: "comments",
+      time: "month",
+      agentCount: 4,
+    });
+    expect(() => ProjectConfigSchema.parse({
+      ...config,
+      redditWebScrape: { ...config.redditWebScrape, agentCount: 9 },
+    })).toThrow(/agentCount/i);
+  });
+
   it("requires a written authorization reference for Reddit credentials", () => {
     expect(() =>
       ConnectionCredentialInputSchema.parse({ provider: "reddit", credential: "not-a-real-secret-value" }),
