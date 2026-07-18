@@ -82,7 +82,7 @@ export function CreateProjectButton({
       return;
     }
     if (!providersReady) {
-      setError("Configure Reddit and Kimi in the backend before starting live discovery.");
+      setError("Configure AIand, Oxylabs, and OXYLABS_AUTHORIZATION_REFERENCE in the backend before starting live discovery.");
       return;
     }
 
@@ -99,6 +99,13 @@ export function CreateProjectButton({
           researchContext: seed.brief,
           researchMode: "live_reddit",
           sourceLabels: [seed.sourceLabel],
+          redditWebScrape: {
+            subreddit: "all",
+            keywords: seed.sourceLabel.replace(/^search:/, ""),
+            sort: "relevance",
+            time: "year",
+            agentCount: 4,
+          },
           maxDocumentsPerRun: 100,
           maxCostMicrosPerRun: 12_000_000,
           workspaceTimeZone,
@@ -116,7 +123,7 @@ export function CreateProjectButton({
       router.push(`/projects/${created.id}/evidence`);
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Reddit discovery could not be started.");
+      setError(caught instanceof Error ? caught.message : "Live discovery could not be started.");
       setWorking(false);
     }
   }
@@ -124,7 +131,7 @@ export function CreateProjectButton({
   return (
     <Dialog
       contentClassName="create-project-dialog"
-      description={stage === "choice" ? "Choose how you want ReDDone to establish the first research boundary." : "Paste the event brief. ReDDone will search through the approved Reddit OAuth connection, rank repeated problems, and propose focused solution directions."}
+      description={stage === "choice" ? "Choose how you want ReDDone to establish the first research boundary." : "Paste the event brief. ReDDone will collect public evidence through Oxylabs, use AIand to rank repeated problems, and propose focused solution directions."}
       onOpenChange={onOpenChange}
       open={open}
       title={stage === "choice" ? "How do you want to begin?" : "Discover what is worth building"}
@@ -163,7 +170,7 @@ export function CreateProjectButton({
           </label>
 
           <div className="discovery-pipeline" aria-label="Discovery steps">
-            <span><Icon name="search" size={17} /><small>01</small><strong>Search Reddit</strong></span>
+            <span><Icon name="search" size={17} /><small>01</small><strong>Collect evidence</strong></span>
             <Icon name="arrow-right" size={15} />
             <span><Icon name="layers" size={17} /><small>02</small><strong>Rank problems</strong></span>
             <Icon name="arrow-right" size={15} />
@@ -172,7 +179,7 @@ export function CreateProjectButton({
 
           {!connectionsLoading && !providersReady ? (
             <Alert title="Live discovery needs backend providers" tone="warning">
-              Ask the operator to configure the server-only Reddit OAuth and Kimi credentials, then retry.
+              Ask the operator to configure AIand, Oxylabs, and OXYLABS_AUTHORIZATION_REFERENCE on the server, then retry.
             </Alert>
           ) : null}
           {error ? <Alert title={createdProjectId ? "Project created; research did not start" : "Discovery could not start"} tone="danger">{error}{createdProjectId ? <> <Link href={`/projects/${createdProjectId}`}>Open the project</Link></> : null}</Alert> : null}
@@ -180,7 +187,7 @@ export function CreateProjectButton({
           <div className="hackathon-discovery-actions">
             <small>Uses 25 credits for one bounded research run. Building still requires approval.</small>
             <Button disabled={working || connectionsLoading || !providersReady || trimmedBrief.length < 50} icon={working ? "activity" : "search"} kind="primary" type="submit">
-              {working ? "Starting discovery…" : connectionsLoading ? "Checking connections…" : "Find problems on Reddit"}
+              {working ? "Starting discovery…" : connectionsLoading ? "Checking providers…" : "Find evidence-backed problems"}
             </Button>
           </div>
         </form>

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { ProjectConfigSchema, RunEstimateResponseSchema, type RunEstimateResponse } from "@/contracts";
+import { DEFAULT_AIAND_BUILDER_MODEL, DEFAULT_AIAND_RESEARCH_MODEL, inferenceBuilderModel, inferenceResearchModel } from "@/integrations/inference-config";
 import { getProject, normalizeDemoProjectId } from "@/workflows/demo-store";
 import { quoteCreditOperation } from "./credit-pricing";
 import { getDb } from "./db";
@@ -242,9 +243,7 @@ export async function estimateProjectRun(input: {
   });
   if (!project) throw new Error("Project not found.");
   const config = ProjectConfigSchema.parse(project.config);
-  const model = input.model ?? (input.kind === "research"
-    ? process.env.KIMI_RESEARCH_MODEL ?? "moonshotai/kimi-k2.6"
-    : process.env.KIMI_BUILDER_MODEL ?? "moonshotai/kimi-k2.7-code");
+  const model = input.model ?? (input.kind === "research" ? inferenceResearchModel() : inferenceBuilderModel());
   const runKind = input.kind.toUpperCase() as "RESEARCH" | "BUILD" | "POLISH";
   const runQuery = async (projectId?: string) => aggregateRunSamples(await db.workflowRun.findMany({
     where: {
@@ -335,7 +334,7 @@ export function estimateDemoProjectRun(input: {
 }) {
   const project = getProject(normalizeDemoProjectId(input.projectId));
   if (!project) throw new Error("Project not found.");
-  const model = input.model ?? (input.kind === "research" ? "moonshotai/kimi-k2.6" : "moonshotai/kimi-k2.7-code");
+  const model = input.model ?? (input.kind === "research" ? DEFAULT_AIAND_RESEARCH_MODEL : DEFAULT_AIAND_BUILDER_MODEL);
   const coldStart = coldStartScenarios({
     kind: input.kind,
     project: {

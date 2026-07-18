@@ -41,10 +41,9 @@ const ProjectWorkspacePayloadSchema = ProjectWorkspaceContextSchema.extend({
 
 const BackendProviderStatusSchema = z.object({
   providers: z.object({
-    kimi: z.boolean(),
+    aiand: z.boolean(),
     daytona: z.boolean(),
-    reddit: z.boolean(),
-    redditWebScraper: z.boolean().optional().default(false),
+    oxylabs: z.boolean(),
   }).strict(),
   discoveryReady: z.boolean(),
   buildReady: z.boolean(),

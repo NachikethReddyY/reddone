@@ -6,6 +6,13 @@ import { z } from "zod";
 
 import { ProductSpecSchema, type ProductSpec } from "@/contracts";
 import { IntegrationError } from "./errors";
+import {
+  inferenceBaseUrl,
+  inferenceBuilderModel,
+  inferenceResearchModel,
+} from "./inference-config";
+
+export { inferenceBaseUrl } from "./inference-config";
 
 const researchSynthesisSchema = z.object({
   candidates: z
@@ -49,7 +56,7 @@ export function extractKimiUsageSample(
 ): KimiUsageSample {
   const parsed = kimiUsageMetadataSchema.safeParse(completion);
   if (!parsed.success) {
-    throw new IntegrationError("invalid_response", "Kimi returned a response without valid token usage metadata.");
+    throw new IntegrationError("invalid_response", "AIand returned a response without valid token usage metadata.");
   }
   return {
     externalUsageId: parsed.data.id,
@@ -60,13 +67,7 @@ export function extractKimiUsageSample(
   };
 }
 
-const DEFAULT_KIMI_BASE_URL = "https://api.moonshot.ai/v1";
-const AIAND_BASE_URL = "https://api.aiand.com/v1";
 const TOKEN_ROUTER_ORIGIN = "https://api.tokenrouter.com";
-
-export function inferenceBaseUrl() {
-  return process.env.AIAND_BASE_URL ?? (process.env.AIAND_API_KEY ? AIAND_BASE_URL : process.env.KIMI_BASE_URL ?? DEFAULT_KIMI_BASE_URL);
-}
 
 function usesTokenRouter() {
   try {
@@ -171,7 +172,7 @@ export async function synthesizeResearch(input: {
   researchContext?: string;
   onUsage?: KimiUsageSink;
 }): Promise<ResearchSynthesis> {
-  const model = process.env.KIMI_RESEARCH_MODEL ?? "moonshotai/kimi-k2.6";
+  const model = inferenceResearchModel();
   const payload = input.documents.slice(0, 100).map((document) => ({
     id: document.id,
     title: document.title.slice(0, 300),
@@ -210,37 +211,37 @@ export async function synthesizeResearch(input: {
     await input.onUsage?.(usage);
 
     const content = completion.choices[0]?.message.content;
-    if (!content) throw new IntegrationError("invalid_response", "Kimi returned no structured result.");
+    if (!content) throw new IntegrationError("invalid_response", "AIand returned no structured result.");
     const synthesis = researchSynthesisSchema.parse(JSON.parse(content));
     const suppliedEvidenceIds = new Set(payload.map((document) => document.id));
     if (synthesis.candidates.some((candidate) => candidate.evidenceIds.some((id) => !suppliedEvidenceIds.has(id)))) {
-      throw new IntegrationError("invalid_response", "Kimi cited evidence outside the supplied research packet.", false, 422);
+      throw new IntegrationError("invalid_response", "AIand cited evidence outside the supplied research packet.", false, 422);
     }
     return synthesis;
   } catch (error) {
     if (error instanceof IntegrationError) throw error;
     if (error instanceof z.ZodError || error instanceof SyntaxError) {
-      throw new IntegrationError("invalid_response", "Kimi returned a result that failed validation.");
+      throw new IntegrationError("invalid_response", "AIand returned a result that failed validation.");
     }
     if (error instanceof OpenAI.APIError) {
       const retryable = error.status === 429 || (error.status ?? 0) >= 500;
       throw new IntegrationError(
         error.status === 429 ? "rate_limited" : "provider_error",
-        retryable ? "Kimi is temporarily unavailable. The run can be retried." : "Kimi rejected the request.",
+        retryable ? "AIand is temporarily unavailable. The run can be retried." : "AIand rejected the request.",
         retryable,
         error.status ?? 502,
       );
     }
-    throw new IntegrationError("provider_error", "Kimi could not be reached.", true);
+    throw new IntegrationError("provider_error", "AIand could not be reached.", true);
   }
 }
 
 export async function testKimiConnection(apiKey: string) {
   const startedAt = Date.now();
   try {
-    const kimiClient = client(apiKey);
-    const researchModel = process.env.KIMI_RESEARCH_MODEL ?? "moonshotai/kimi-k2.6";
-    const structured = await kimiClient.chat.completions.create({
+    const inferenceClient = client(apiKey);
+    const researchModel = inferenceResearchModel();
+    const structured = await inferenceClient.chat.completions.create({
       model: researchModel,
       temperature: getKimiTemperature(0),
       max_tokens: connectionProbeMaxTokens,
@@ -258,8 +259,8 @@ export async function testKimiConnection(apiKey: string) {
     if (typeof structuredContent !== "string") throw new Error("Provider returned no structured probe result.");
     connectionProbeSchema.parse(JSON.parse(structuredContent));
 
-    const builderModel = process.env.KIMI_BUILDER_MODEL ?? "moonshotai/kimi-k2.7-code";
-    const toolCompletion = await kimiClient.chat.completions.create({
+    const builderModel = inferenceBuilderModel();
+    const toolCompletion = await inferenceClient.chat.completions.create({
       model: builderModel,
       temperature: getKimiTemperature(0),
       max_tokens: connectionProbeMaxTokens,
@@ -338,7 +339,7 @@ export async function generateProductSpec(input: {
   onUsage?: KimiUsageSink;
 }): Promise<ProductSpec> {
   try {
-    const model = process.env.KIMI_RESEARCH_MODEL ?? "moonshotai/kimi-k2.6";
+    const model = inferenceResearchModel();
     const completion = await client(input.apiKey).chat.completions.create({
       model,
       temperature: getKimiTemperature(0.1),
@@ -359,19 +360,19 @@ export async function generateProductSpec(input: {
     const usage = extractKimiUsageSample(completion, { operation: "product_specification", model });
     await input.onUsage?.(usage);
     const content = completion.choices[0]?.message.content;
-    if (!content) throw new IntegrationError("invalid_response", "Kimi returned no product specification.");
+    if (!content) throw new IntegrationError("invalid_response", "AIand returned no product specification.");
     const spec = ProductSpecSchema.parse(JSON.parse(content));
     const allowedEvidence = new Set(input.evidence.map((item) => item.id));
     if (spec.evidenceIds.some((id) => !allowedEvidence.has(id))) {
-      throw new IntegrationError("invalid_response", "Kimi cited evidence outside the selected finding.", false, 422);
+      throw new IntegrationError("invalid_response", "AIand cited evidence outside the selected finding.", false, 422);
     }
     return spec;
   } catch (error) {
     if (error instanceof IntegrationError) throw error;
     if (error instanceof z.ZodError || error instanceof SyntaxError) {
-      throw new IntegrationError("invalid_response", "Kimi returned a specification that failed validation.");
+      throw new IntegrationError("invalid_response", "AIand returned a specification that failed validation.");
     }
-    throw new IntegrationError("provider_error", "Kimi could not create the product specification.", true);
+    throw new IntegrationError("provider_error", "AIand could not create the product specification.", true);
   }
 }
 
@@ -390,7 +391,7 @@ export async function improveProductSpec(input: {
   }));
   if (evidence.length === 0) throw new IntegrationError("invalid_response", "A polish proposal requires incremental evidence.", false, 422);
   try {
-    const model = process.env.KIMI_RESEARCH_MODEL ?? "moonshotai/kimi-k2.6";
+    const model = inferenceResearchModel();
     const completion = await client(input.apiKey).chat.completions.create({
       model,
       temperature: getKimiTemperature(0.1),
@@ -424,27 +425,27 @@ export async function improveProductSpec(input: {
     const usage = extractKimiUsageSample(completion, { operation: "polish_specification", model });
     await input.onUsage?.(usage);
     const content = completion.choices[0]?.message.content;
-    if (!content) throw new IntegrationError("invalid_response", "Kimi returned no polish proposal.");
+    if (!content) throw new IntegrationError("invalid_response", "AIand returned no polish proposal.");
     const spec = ProductSpecSchema.parse(JSON.parse(content));
     const allowedEvidence = new Set(evidence.map((item) => item.id));
     if (spec.evidenceIds.some((id) => !allowedEvidence.has(id))) {
-      throw new IntegrationError("invalid_response", "Kimi cited evidence outside the incremental packet.");
+      throw new IntegrationError("invalid_response", "AIand cited evidence outside the incremental packet.");
     }
     return spec;
   } catch (error) {
     if (error instanceof IntegrationError) throw error;
     if (error instanceof z.ZodError || error instanceof SyntaxError) {
-      throw new IntegrationError("invalid_response", "Kimi returned a polish proposal that failed validation.");
+      throw new IntegrationError("invalid_response", "AIand returned a polish proposal that failed validation.");
     }
     if (error instanceof OpenAI.APIError) {
       const retryable = error.status === 429 || (error.status ?? 0) >= 500;
       throw new IntegrationError(
         error.status === 429 ? "rate_limited" : "provider_error",
-        retryable ? "Kimi is temporarily unavailable. The polish run can be retried." : "Kimi rejected the polish request.",
+        retryable ? "AIand is temporarily unavailable. The polish run can be retried." : "AIand rejected the polish request.",
         retryable,
         error.status ?? 502,
       );
     }
-    throw new IntegrationError("provider_error", "Kimi could not create the polish proposal.", true);
+    throw new IntegrationError("provider_error", "AIand could not create the polish proposal.", true);
   }
 }

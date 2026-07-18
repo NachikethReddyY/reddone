@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { DEFAULT_WORKFLOW_MODEL, WorkflowModelOptions, type WorkflowModel } from "@/contracts";
+import { DEFAULT_RESEARCH_MODEL, WorkflowModelOptions, type WorkflowModel } from "@/contracts";
 import { Button } from "@/components/ui";
 import { useStartRunMutation } from "@/features/projects/project-queries";
 
@@ -18,7 +18,7 @@ export function ProjectRunActions({
   onQueued?: () => void;
 }) {
   const startRun = useStartRunMutation(projectId);
-  const [model, setModel] = useState<WorkflowModel>(DEFAULT_WORKFLOW_MODEL);
+  const [model, setModel] = useState<WorkflowModel>(DEFAULT_RESEARCH_MODEL);
 
   async function startResearch() {
     await startRun.mutateAsync({

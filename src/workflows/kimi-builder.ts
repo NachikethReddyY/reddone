@@ -11,7 +11,7 @@ import { z } from "zod";
 
 import { createIsolatedSandbox, verifierGates, type SandboxHandle } from "@/integrations/daytona";
 import { IntegrationError } from "@/integrations/errors";
-import { DEFAULT_WORKFLOW_MODEL, type WorkflowModel } from "@/contracts";
+import { DEFAULT_BUILDER_MODEL, type WorkflowModel } from "@/contracts";
 import { buildArtifactManifest, verifyArtifactManifest } from "@/policy/build-boundary";
 import { redactSecrets } from "@/policy/secret-guard";
 import { canonicalJson } from "@/server/security/canonical-json";
@@ -120,7 +120,7 @@ export async function runKimiBuilder(input: {
   deadline: BuildDeadline;
   onUsage?: (sample: KimiUsageSample) => Promise<void> | void;
 }) {
-  const model = input.model ?? DEFAULT_WORKFLOW_MODEL;
+  const model = input.model ?? DEFAULT_BUILDER_MODEL;
   const maxTurns = Math.min(Math.max(input.maxTurns ?? 20, 1), 20);
   const messages: ChatCompletionMessageParam[] = [
     {
@@ -150,10 +150,10 @@ export async function runKimiBuilder(input: {
       }),
     },
   ];
-  const client = kimi(input.apiKey, input.deadline.remainingMs("Kimi builder initialization", 90_000));
+  const client = kimi(input.apiKey, input.deadline.remainingMs("AIand builder initialization", 90_000));
 
   for (let turn = 1; turn <= maxTurns; turn += 1) {
-    const stage = `Kimi builder turn ${turn}`;
+    const stage = `AIand builder turn ${turn}`;
     const completion = await input.deadline.run(stage, (signal) =>
       client.chat.completions.create(
         {
@@ -172,9 +172,9 @@ export async function runKimiBuilder(input: {
       operation: input.repairFeedback ? "builder_repair" : "builder_generation",
       model,
     });
-    await input.deadline.run("Kimi usage accounting", async () => input.onUsage?.(usage));
+    await input.deadline.run("AIand usage accounting", async () => input.onUsage?.(usage));
     const message = completion.choices[0]?.message;
-    if (!message) throw new IntegrationError("invalid_response", "Kimi returned no builder message.");
+    if (!message) throw new IntegrationError("invalid_response", "The inference provider returned no builder message.");
     messages.push(message);
     if (!message.tool_calls?.length) {
       return {
@@ -188,7 +188,7 @@ export async function runKimiBuilder(input: {
       let result: unknown;
       try {
         result = await input.deadline.run(
-          `Kimi tool ${toolCall.function.name}`,
+          `AIand tool ${toolCall.function.name}`,
           () => executeTool(input.sandbox, toolCall.function.name, toolCall.function.arguments),
         );
       } catch (error) {
@@ -308,9 +308,9 @@ export async function runTwoSandboxBuild(input: {
         apiKey: input.kimiApiKey,
         sandbox: builder!,
         productSpec: input.productSpec,
-        model: input.model,
         maxTurns: Math.min(maxTurns, remainingTurns),
         deadline,
+        ...(input.model ? { model: input.model } : {}),
         ...(input.onUsage ? { onUsage: input.onUsage } : {}),
         ...(repairFeedback ? { repairFeedback } : {}),
       });

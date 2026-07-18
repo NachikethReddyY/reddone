@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { DEFAULT_WORKFLOW_MODEL, WorkflowModelOptions, type WorkflowModel } from "@/contracts";
+import { DEFAULT_RESEARCH_MODEL, WorkflowModelOptions, type WorkflowModel } from "@/contracts";
 import { Button } from "@/components/ui";
 import type { ProjectViewModel } from "./project-view-data";
 
@@ -23,7 +23,7 @@ export function FindingSpecAction({
   const [working, setWorking] = useState(false);
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
-  const [model, setModel] = useState<WorkflowModel>(DEFAULT_WORKFLOW_MODEL);
+  const [model, setModel] = useState<WorkflowModel>(DEFAULT_RESEARCH_MODEL);
   const selected = project.selectedFinding;
   if (!selected || project.spec) return null;
   const active = project.runs.some((run) => ["queued", "running", "cancel_requested"].includes(run.status));

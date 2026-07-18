@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import type { ProjectCreateInput, ResearchPacket } from "@/contracts";
 import { putImmutableArtifact } from "@/integrations/artifact-store";
 
-import { getBackendRedditCredentials } from "./backend-providers";
+import { getBackendRedditResidentialCredentials } from "./backend-providers";
 import { getDb } from "./db";
 
 export async function listWorkspaceProjects(workspaceId: string) {
@@ -71,8 +71,8 @@ export async function getWorkspaceProject(workspaceId: string, projectId: string
 
 export async function createWorkspaceProject(workspaceId: string, input: ProjectCreateInput) {
   const db = getDb();
-  const redditCredentials = input.config.researchMode === "live_reddit"
-    ? await getBackendRedditCredentials(workspaceId)
+  const oxylabsCredentials = input.config.researchMode === "live_reddit"
+    ? getBackendRedditResidentialCredentials()
     : null;
   return db.$transaction(async (tx) => {
     const project = await tx.project.create({
@@ -104,7 +104,7 @@ export async function createWorkspaceProject(workspaceId: string, input: Project
                         : "FIXTURE" as const,
                   label,
                   ...(input.config.researchMode === "live_reddit"
-                    ? { authorizationReference: redditCredentials!.approvalReference, authorizedAt: new Date() }
+                    ? { authorizationReference: oxylabsCredentials!.authorizationReference, authorizedAt: new Date() }
                     : {}),
                 }))
               : [

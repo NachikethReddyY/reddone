@@ -197,7 +197,7 @@ function initialState(): StoreState {
     version: 5,
   };
   const connections = new Map<Provider, RuntimeConnection>([
-    ["kimi", demoConnection("kimi", "Schema mode · kimi-k2.6")],
+    ["kimi", demoConnection("kimi", "AIand · zai-org/glm-5.2")],
     ["daytona", demoConnection("daytona", "Builder + verifier simulation")],
     ["github", demoConnection("github", "Private repository simulation")],
     ["vercel", demoConnection("vercel", "Prebuilt deployment simulation")],

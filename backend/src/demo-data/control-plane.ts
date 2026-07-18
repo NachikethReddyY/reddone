@@ -95,8 +95,8 @@ export const projects: DemoProject[] = [
 export const providerConnections = [
   {
     id: "kimi",
-    name: "TokenRouter",
-    role: "Kimi-powered research, specification, and bounded code generation",
+    name: "AIand",
+    role: "AIand-powered research, specification, and bounded code generation",
     status: "connected" as const,
     account: "api.tokenrouter.com",
     scopes: ["chat.completions", "structured-output"],
@@ -341,7 +341,7 @@ export const approvalQueue = [
     risk: "Up to 20 model turns and 30 sandbox minutes will be reserved.",
     payload: [
       ["Specification", "v3 · sha256:3ef820…7ad1"],
-      ["Builder", "TokenRouter · moonshotai/kimi-k2.7-code"],
+      ["Builder", "AIand · moonshotai/kimi-k2.7-code"],
       ["Sandbox", "Daytona · two isolated runs"],
       ["Cost ceiling", "$12.00"],
     ],

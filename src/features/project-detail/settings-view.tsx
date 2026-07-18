@@ -162,8 +162,8 @@ export function SettingsView({ projectId }: { projectId: string }) {
 
         <Surface className="settings-section" id="research">
           <div className="settings-heading"><div><span className="eyebrow">Evidence policy</span><h2>Research source</h2><p>Source mode is explicit and never inferred from color.</p></div><SourceBadge mode={sourceMode} /></div>
-          <div className="research-source-card"><span><Icon name="database" size={22} /></span><div><strong>{sourceLabel}</strong><small>{sourceMode === "live" ? "Authorized Reddit adapter" : sourceMode === "import" ? "Owner-authorized JSON packet" : "No external Reddit request"}</small></div></div>
-          {sourceMode !== "live" && <div className="policy-lock"><Icon name="lock" size={19} /><span><strong>Live Reddit API remains disabled</strong><small>Only add access that has written commercial and downstream AI authorization.</small></span><ButtonLink href="/connections">Open requirements</ButtonLink></div>}
+          <div className="research-source-card"><span><Icon name="database" size={22} /></span><div><strong>{sourceLabel}</strong><small>{sourceMode === "live" ? "Authorized Oxylabs collector" : sourceMode === "import" ? "Owner-authorized JSON packet" : "No external collection"}</small></div></div>
+          {sourceMode !== "live" && <div className="policy-lock"><Icon name="lock" size={19} /><span><strong>Live public collection remains disabled</strong><small>Oxylabs access requires a recorded authorization reference before use.</small></span><ButtonLink href="/connections">Open requirements</ButtonLink></div>}
         </Surface>
 
         <Surface className="settings-section" id="runtime-secrets">

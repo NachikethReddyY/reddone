@@ -1,4 +1,5 @@
 import { ProjectDraftRunEstimateInputSchema } from "@/contracts";
+import { inferenceResearchModel } from "@/integrations/inference-config";
 import { getDb } from "@/server/db";
 import { isDemoMode } from "@/server/env";
 import {
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
     const owner = await assertOwnerRequest(request);
     assertSameOrigin(request);
     const body = await parseJson(request, ProjectDraftRunEstimateInputSchema);
-    const model = body.model ?? process.env.KIMI_RESEARCH_MODEL ?? "moonshotai/kimi-k2.6";
+    const model = body.model ?? inferenceResearchModel();
     let workspaceSamples: TokenSample[] = [];
 
     if (!isDemoMode()) {

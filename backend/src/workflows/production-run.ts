@@ -24,7 +24,7 @@ const stepLabels: Record<"research" | "build" | "polish", Array<[string, string]
   ],
   build: [
     ["approval", "Consume specification approval"],
-    ["builder", "Constrained Kimi builder"],
+    ["builder", "Constrained AIand builder"],
     ["verifier", "Fresh sandbox verification"],
     ["artifact", "Persist verified artifacts"],
     ["approval_release", "Request release approval"],
@@ -173,7 +173,7 @@ export async function createProductionRun(input: {
         });
         if (!finding || finding.evidence.length === 0) throw new Error("The selected finding or its attributable evidence is unavailable.");
         if (!specificationProviderAccounts || specificationProviderAccounts.length !== 2) {
-          throw new Error("Kimi and Daytona must both be healthy before ProductSpec generation can be queued.");
+          throw new Error("AIand inference and Daytona must both be healthy before ProductSpec generation can be queued.");
         }
       }
       const projectConfig = ProjectConfigSchema.parse(project.config);

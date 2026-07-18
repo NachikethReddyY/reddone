@@ -31,7 +31,7 @@ const workflow = [
   {
     index: "04",
     title: "Build and verify in isolation",
-    description: "Kimi writes inside a disposable Daytona sandbox. A clean verifier checks the resulting artifact separately.",
+    description: "AIand inference writes inside a disposable Daytona sandbox. A clean verifier checks the resulting artifact separately.",
     icon: "terminal" as const,
   },
   {
@@ -110,7 +110,7 @@ function ArtifactNarrative() {
       <article className={styles.releaseArtifact}>
         <div className={styles.artifactMeta}><span>Verified artifact</span><Icon name="shield" size={17} /></div>
         <div className={styles.releaseLine}><Icon name="check" size={16} /><span>Clean Daytona verification</span></div>
-        <div className={styles.releaseLine}><Icon name="activity" size={16} /><span>Actual Kimi usage attached</span></div>
+        <div className={styles.releaseLine}><Icon name="activity" size={16} /><span>Actual inference usage attached</span></div>
         <div className={styles.releaseLine}><Icon name="lock" size={16} /><span>Release awaits owner approval</span></div>
       </article>
     </div>
@@ -126,7 +126,7 @@ export function HomeMarketing({ mode }: { mode: DeploymentMode }) {
           <div className={styles.heroCopy}>
             <p className={styles.kicker}>Evidence in. Verified software out.</p>
             <h1>Build the right product without surrendering the release decision.</h1>
-            <p className={styles.lede}>ReDDone turns source evidence into a ranked problem, an owner-approved ProductSpec, an isolated Kimi build, a clean verification result, and one explicit production decision.</p>
+            <p className={styles.lede}>ReDDone turns source evidence into a ranked problem, an owner-approved ProductSpec, an isolated AIand build, a clean verification result, and one explicit production decision.</p>
             <div className={styles.heroActions}>
               <Link className={styles.primaryCta} href={cta.href}>{cta.label}<Icon name="arrow-right" size={18} /></Link>
               <Link className={styles.secondaryCta} href="/#workflow">See the real workflow</Link>

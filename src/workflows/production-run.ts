@@ -7,7 +7,7 @@ import { recordAuditEvent } from "@/server/audit";
 import { canonicalJson } from "@/server/security/canonical-json";
 import { redactSecrets } from "@/policy/secret-guard";
 import { start } from "workflow/api";
-import { DEFAULT_WORKFLOW_MODEL, ProjectConfigSchema, type WorkflowModel } from "@/contracts";
+import { DEFAULT_BUILDER_MODEL, DEFAULT_RESEARCH_MODEL, ProjectConfigSchema, type WorkflowModel } from "@/contracts";
 import { assertWorkspaceBudgetAvailable } from "@/server/budget";
 import { getBackendBuildProviderAccounts } from "@/server/backend-providers";
 import { reserveCredits, releaseCreditReservation } from "@/server/credits";
@@ -24,7 +24,7 @@ const stepLabels: Record<"research" | "build" | "polish", Array<[string, string]
   ],
   build: [
     ["approval", "Consume specification approval"],
-    ["builder", "Constrained Kimi builder"],
+    ["builder", "Constrained AIand builder"],
     ["verifier", "Fresh sandbox verification"],
     ["artifact", "Persist verified artifacts"],
     ["approval_release", "Request release approval"],
@@ -72,7 +72,7 @@ export async function createProductionRun(input: {
   expectedParentRunVersion?: number;
 }) {
   const db = getDb();
-  const model = input.model ?? DEFAULT_WORKFLOW_MODEL;
+  const model = input.model ?? (input.kind === "research" ? DEFAULT_RESEARCH_MODEL : DEFAULT_BUILDER_MODEL);
   let workflowPurpose = input.workflowPurpose ?? "research";
   let findingId = input.findingId;
   let expectedProjectVersion = input.expectedProjectVersion;
@@ -176,7 +176,7 @@ export async function createProductionRun(input: {
         });
         if (!finding || finding.evidence.length === 0) throw new Error("The selected finding or its attributable evidence is unavailable.");
         if (!specificationProviderAccounts || specificationProviderAccounts.length !== 2) {
-          throw new Error("Kimi and Daytona must both be healthy before ProductSpec generation can be queued.");
+          throw new Error("AIand inference and Daytona must both be healthy before ProductSpec generation can be queued.");
         }
       }
       const projectConfig = ProjectConfigSchema.parse(project.config);

@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 
 import { z } from "zod";
 
+import { DEFAULT_AIAND_BUILDER_MODEL, DEFAULT_AIAND_RESEARCH_MODEL } from "@/integrations/inference-config";
+
 import { AppError } from "./errors";
 
 const emptyToUndefined = (value: unknown): unknown => (value === "" ? undefined : value);
@@ -13,6 +15,12 @@ const hasProtocol = (value: string, protocols: readonly string[]): boolean => {
   }
 };
 const OptionalString = z.preprocess(emptyToUndefined, z.string().optional());
+const OptionalPort = z.preprocess(
+  emptyToUndefined,
+  z.string().regex(/^\d{1,5}$/, "Expected a TCP port").refine((value) => Number(value) >= 1 && Number(value) <= 65_535, {
+    message: "Expected a TCP port between 1 and 65535",
+  }).optional(),
+);
 const HttpUrl = z.string().url().refine((value) => hasProtocol(value, ["http:", "https:"]), {
   message: "Expected an HTTP(S) URL",
 });
@@ -130,12 +138,16 @@ export const RuntimeEnvSchema = z
     STRIPE_PRICE_PACK_1000_SGD_V1: OptionalStripePriceId,
     PREVIEW_ORIGIN: OptionalOrigin,
     PREVIEW_SIGNING_KEY: OptionalSecret,
-    KIMI_API_KEY: OptionalString,
-    MOONSHOT_API_KEY: OptionalString,
     AIAND_API_KEY: OptionalString,
     AIAND_BASE_URL: OptionalUrl,
-    KIMI_RESEARCH_MODEL: z.string().trim().min(1).default("moonshotai/kimi-k2.6"),
-    KIMI_BUILDER_MODEL: z.string().trim().min(1).default("moonshotai/kimi-k2.7-code"),
+    AIAND_RESEARCH_MODEL: OptionalString,
+    AIAND_BUILDER_MODEL: OptionalString,
+    /** Compatibility-only settings for existing direct Kimi/Moonshot installations. */
+    KIMI_API_KEY: OptionalString,
+    MOONSHOT_API_KEY: OptionalString,
+    KIMI_BASE_URL: OptionalUrl,
+    KIMI_RESEARCH_MODEL: OptionalString,
+    KIMI_BUILDER_MODEL: OptionalString,
     KIMI_INPUT_COST_MICROS_PER_MILLION: OptionalCostRate,
     KIMI_OUTPUT_COST_MICROS_PER_MILLION: OptionalCostRate,
     DAYTONA_API_KEY: OptionalString,
@@ -146,10 +158,12 @@ export const RuntimeEnvSchema = z
     PROJECT_CONVERSATION_MUTATIONS_ENABLED: EnvBoolean.default(false),
     PROJECT_CONVERSATION_AUTOPILOT_ENABLED: EnvBoolean.default(false),
     PROJECT_SECRET_IDEMPOTENCY_KEY: OptionalSecret,
-    REDDIT_CLIENT_ID: OptionalString,
-    REDDIT_CLIENT_SECRET: OptionalString,
-    REDDIT_USER_AGENT: OptionalString,
     REDDIT_APPROVAL_REFERENCE: OptionalString,
+    OXYLABS_ENDPOINT: OptionalString,
+    OXYLABS_PORT: OptionalPort,
+    OXYLABS_USERNAME: OptionalString,
+    OXYLABS_PASSWORD: OptionalString,
+    OXYLABS_AUTHORIZATION_REFERENCE: OptionalString,
     AUTH_TRUSTED_ORIGIN: OptionalOrigin,
   })
   .passthrough();
@@ -192,7 +206,7 @@ export interface RuntimeConfig {
   providers: {
     kimiResearchModel: string;
     kimiBuilderModel: string;
-    redditApproved: boolean;
+    oxylabsConfigured: boolean;
   };
   preview: {
     origin: string | null;
@@ -292,6 +306,12 @@ export function getRuntimeConfig(
     && (!env.AUTH_EMAIL_FROM || !env.AUTH_EMAIL_WEBHOOK_URL || !env.AUTH_EMAIL_WEBHOOK_TOKEN)
   ) {
     issues.push("AUTH_EMAIL_FROM, AUTH_EMAIL_WEBHOOK_URL, and AUTH_EMAIL_WEBHOOK_TOKEN are required for webhook email delivery");
+  }
+  const oxylabsAuthorizationReference = env.OXYLABS_AUTHORIZATION_REFERENCE ?? env.REDDIT_APPROVAL_REFERENCE;
+  const oxylabsValues = [env.OXYLABS_ENDPOINT, env.OXYLABS_PORT, env.OXYLABS_USERNAME, env.OXYLABS_PASSWORD, oxylabsAuthorizationReference];
+  const explicitOxylabsValues = [env.OXYLABS_ENDPOINT, env.OXYLABS_PORT, env.OXYLABS_USERNAME, env.OXYLABS_PASSWORD, env.OXYLABS_AUTHORIZATION_REFERENCE];
+  if (explicitOxylabsValues.some(Boolean) && !oxylabsValues.every(Boolean)) {
+    issues.push("The four OXYLABS connection variables and OXYLABS_AUTHORIZATION_REFERENCE must be configured together");
   }
   if (deploymentMode === "public" && env.NODE_ENV === "production" && env.AUTH_EMAIL_DELIVERY_MODE !== "webhook") {
     issues.push("Production public mode requires webhook email delivery for verification and password reset");
@@ -467,9 +487,15 @@ export function getRuntimeConfig(
     },
     vault,
     providers: {
-      kimiResearchModel: env.KIMI_RESEARCH_MODEL,
-      kimiBuilderModel: env.KIMI_BUILDER_MODEL,
-      redditApproved: Boolean(env.REDDIT_APPROVAL_REFERENCE),
+      kimiResearchModel: env.AIAND_RESEARCH_MODEL ?? env.KIMI_RESEARCH_MODEL ?? DEFAULT_AIAND_RESEARCH_MODEL,
+      kimiBuilderModel: env.AIAND_BUILDER_MODEL ?? env.KIMI_BUILDER_MODEL ?? DEFAULT_AIAND_BUILDER_MODEL,
+      oxylabsConfigured: Boolean(
+        env.OXYLABS_ENDPOINT
+        && env.OXYLABS_PORT
+        && env.OXYLABS_USERNAME
+        && env.OXYLABS_PASSWORD
+        && oxylabsAuthorizationReference
+      ),
     },
     preview: {
       origin: env.PREVIEW_ORIGIN ? new URL(env.PREVIEW_ORIGIN).origin : null,

@@ -272,7 +272,7 @@ export function ConnectionsPanel() {
           <div className="map-node node-one"><Icon name="branch" size={19} /><span>GitHub</span></div>
           <div className="map-node node-two"><Icon name="globe" size={19} /><span>Vercel</span></div>
         </div>
-        <div><span className="eyebrow">Account connections</span><h2>Connect source and release accounts.</h2><p>GitHub and Vercel authorization stays attached to the owner workspace. Kimi, Daytona, and Reddit are configured separately by the backend operator.</p><div className="connection-stats"><span><strong>{Object.values(statuses).filter((status) => status === "connected").length}</strong> healthy</span><span><strong>{Object.values(statuses).filter((status) => status === "attention").length}</strong> attention</span></div></div>
+        <div><span className="eyebrow">Account connections</span><h2>Connect source and release accounts.</h2><p>GitHub and Vercel authorization stays attached to the owner workspace. AIand inference, Daytona, and Oxylabs discovery are configured separately by the backend operator.</p><div className="connection-stats"><span><strong>{Object.values(statuses).filter((status) => status === "connected").length}</strong> healthy</span><span><strong>{Object.values(statuses).filter((status) => status === "attention").length}</strong> attention</span></div></div>
       </div>
 
       <div className="inline-notice" aria-live="polite"><Icon name="shield" size={17} /><span>{event}</span></div>

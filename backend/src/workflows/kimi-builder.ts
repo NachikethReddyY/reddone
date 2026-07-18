@@ -11,10 +11,11 @@ import { z } from "zod";
 
 import { createIsolatedSandbox, verifierGates, type SandboxHandle } from "@/integrations/daytona";
 import { IntegrationError } from "@/integrations/errors";
+import { inferenceBaseUrl, inferenceBuilderModel } from "@/integrations/inference-config";
 import { buildArtifactManifest, verifyArtifactManifest } from "@/policy/build-boundary";
 import { redactSecrets } from "@/policy/secret-guard";
 import { canonicalJson } from "@/server/security/canonical-json";
-import { extractKimiUsageSample, getKimiTemperature, inferenceBaseUrl, type KimiUsageSample } from "@/integrations/kimi";
+import { extractKimiUsageSample, getKimiTemperature, type KimiUsageSample } from "@/integrations/kimi";
 import { BuildDeadline, isBuildDeadlineExceeded } from "./build-deadline";
 
 const readArgs = z.object({ path: z.string().min(1).max(500) }).strict();
@@ -118,7 +119,7 @@ export async function runKimiBuilder(input: {
   deadline: BuildDeadline;
   onUsage?: (sample: KimiUsageSample) => Promise<void> | void;
 }) {
-  const model = process.env.KIMI_BUILDER_MODEL ?? "moonshotai/kimi-k2.7-code";
+  const model = inferenceBuilderModel();
   const maxTurns = Math.min(Math.max(input.maxTurns ?? 20, 1), 20);
   const messages: ChatCompletionMessageParam[] = [
     {
@@ -148,10 +149,10 @@ export async function runKimiBuilder(input: {
       }),
     },
   ];
-  const client = kimi(input.apiKey, input.deadline.remainingMs("Kimi builder initialization", 90_000));
+  const client = kimi(input.apiKey, input.deadline.remainingMs("AIand builder initialization", 90_000));
 
   for (let turn = 1; turn <= maxTurns; turn += 1) {
-    const stage = `Kimi builder turn ${turn}`;
+    const stage = `AIand builder turn ${turn}`;
     const completion = await input.deadline.run(stage, (signal) =>
       client.chat.completions.create(
         {
@@ -170,9 +171,9 @@ export async function runKimiBuilder(input: {
       operation: input.repairFeedback ? "builder_repair" : "builder_generation",
       model,
     });
-    await input.deadline.run("Kimi usage accounting", async () => input.onUsage?.(usage));
+    await input.deadline.run("AIand usage accounting", async () => input.onUsage?.(usage));
     const message = completion.choices[0]?.message;
-    if (!message) throw new IntegrationError("invalid_response", "Kimi returned no builder message.");
+    if (!message) throw new IntegrationError("invalid_response", "AIand returned no builder message.");
     messages.push(message);
     if (!message.tool_calls?.length) {
       return {
@@ -186,7 +187,7 @@ export async function runKimiBuilder(input: {
       let result: unknown;
       try {
         result = await input.deadline.run(
-          `Kimi tool ${toolCall.function.name}`,
+          `AIand tool ${toolCall.function.name}`,
           () => executeTool(input.sandbox, toolCall.function.name, toolCall.function.arguments),
         );
       } catch (error) {
@@ -258,8 +259,8 @@ function outputManifest(
 }
 
 /**
- * Full production boundary: Kimi edits in builder A; only hashed allowlisted files cross into fresh verifier B.
- * Neither sandbox receives Kimi, provider, cloud, or project runtime credentials.
+ * Full production boundary: AIand edits in builder A; only hashed allowlisted files cross into fresh verifier B.
+ * Neither sandbox receives AIand, provider, cloud, or project runtime credentials.
  */
 export async function runTwoSandboxBuild(input: {
   runId: string;
