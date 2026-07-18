@@ -187,6 +187,15 @@ function rateLimitFrom(headers: Headers): RedditRateLimit {
   };
 }
 
+function isRedditUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && (url.hostname === "reddit.com" || url.hostname.endsWith(".reddit.com"));
+  } catch {
+    return false;
+  }
+}
+
 function toPost(data: z.infer<typeof redditPostDataSchema>): RedditPost {
   return {
     id: data.id,
@@ -194,7 +203,7 @@ function toPost(data: z.infer<typeof redditPostDataSchema>): RedditPost {
     title: data.title,
     body: data.selftext || data.title,
     permalink: `https://www.reddit.com${data.permalink}`,
-    externalUrl: data.url && !data.url.startsWith("https://www.reddit.com") ? data.url : null,
+    externalUrl: data.url && !isRedditUrl(data.url) ? data.url : null,
     score: data.score,
     commentCount: data.num_comments,
     createdAt: new Date(data.created_utc * 1_000).toISOString(),

@@ -19,7 +19,7 @@ const credentials = {
   approvalReference: "owner-approved-oauth",
 };
 
-function postListing(id = "post1") {
+function postListing(id = "post1", url = `https://www.reddit.com/r/urbanplanning/comments/${id}/heat_alerts/`) {
   return {
     data: {
       after: null,
@@ -30,7 +30,7 @@ function postListing(id = "post1") {
           title: "Heat alerts arrive too late for our neighborhood",
           selftext: "Volunteers rebuild the call list every time temperatures spike.",
           permalink: `/r/urbanplanning/comments/${id}/heat_alerts/`,
-          url: `https://www.reddit.com/r/urbanplanning/comments/${id}/heat_alerts/`,
+          url,
           score: 87,
           num_comments: 4,
           created_utc: 1_784_236_800,
@@ -100,6 +100,17 @@ describe("approved Reddit discovery search", () => {
     expect(first.rateLimit).toEqual({ used: 2, remaining: 98, resetSeconds: 42 });
     expect(second.items[0]?.id).toBe("post2");
     expect(new Headers(fetchMock.mock.calls[2]?.[1]?.headers).get("authorization")).toBe("Bearer cached-token");
+  });
+
+  it("keeps lookalike Reddit hostnames as external URLs", async () => {
+    const externalUrl = "https://www.reddit.com.attacker.example/phishing";
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "host-token", expires_in: 3600 }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(postListing("post1", externalUrl)), { status: 200 })));
+
+    const result = await searchApprovedRedditPage({ credentials, query: "heat workflow" });
+
+    expect(result.items[0]?.externalUrl).toBe(externalUrl);
   });
 
   it("normalizes a bounded post thread and omits deleted comments", async () => {

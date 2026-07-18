@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomInt, randomUUID } from "node:crypto";
 
 import { Prisma, type BillingAccount, type BillingCheckoutSession } from "@prisma/client";
 import type Stripe from "stripe";
@@ -94,9 +94,8 @@ function serializable<T>(operation: (tx: Prisma.TransactionClient) => Promise<T>
 
 function integrationIdentifier(): string {
   const alphabet = "abcdefghijklmnopqrstuvwxyz";
-  const bytes = randomBytes(8);
   let suffix = "";
-  for (const byte of bytes) suffix += alphabet[byte % alphabet.length];
+  for (let index = 0; index < 8; index += 1) suffix += alphabet.charAt(randomInt(alphabet.length));
   return `${CHECKOUT_IDENTIFIER_PREFIX}${suffix}`;
 }
 
