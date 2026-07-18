@@ -3,7 +3,7 @@ import "dotenv/config";
 import { randomBytes } from "node:crypto";
 
 import { disconnectDb, getDb } from "../src/server/db";
-import { hackathonCreditCodeSuffix, hashHackathonCreditCode } from "../src/server/credits";
+import { creditCodeSuffix, hashCreditCode } from "../src/server/credit-codes";
 import { getRuntimeConfig } from "../src/server/env";
 
 function option(name: string) {
@@ -44,8 +44,8 @@ async function main() {
     const code = generateCode();
     await db.creditCode.create({
       data: {
-        codeHash: hashHackathonCreditCode(code, hashSecret),
-        displaySuffix: hackathonCreditCodeSuffix(code),
+        codeHash: hashCreditCode(code, hashSecret),
+        displaySuffix: creditCodeSuffix(code),
         label: label.slice(0, 120),
         grantCredits: credits,
         maxRedemptions,
