@@ -14,7 +14,7 @@ import { readProviderCredential } from "./secret-vault";
 export type BackendProvider = "kimi" | "daytona" | "reddit";
 
 function kimiEnvironmentKey() {
-  return process.env.KIMI_API_KEY?.trim() || process.env.MOONSHOT_API_KEY?.trim() || null;
+  return process.env.AIAND_API_KEY?.trim() || process.env.KIMI_API_KEY?.trim() || process.env.MOONSHOT_API_KEY?.trim() || null;
 }
 
 function daytonaEnvironmentKey() {

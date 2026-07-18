@@ -58,7 +58,7 @@ import { z } from "zod";
 
 export async function executeRunWorkflow(workspaceId: string, runId: string) {
   "use workflow";
-  let fencingToken: WorkflowFencingToken | null = null;
+  let fencingToken: string | null = null;
   try {
     const claim = await claimRun(workspaceId, runId);
     if (!claim) return { runId, status: "skipped" as const };

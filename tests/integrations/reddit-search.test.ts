@@ -19,7 +19,7 @@ const credentials = {
   approvalReference: "owner-approved-oauth",
 };
 
-function postListing(id = "post1") {
+function postListing(id = "post1", url = `https://www.reddit.com/r/urbanplanning/comments/${id}/heat_alerts/`) {
   return {
     data: {
       after: null,
@@ -30,7 +30,7 @@ function postListing(id = "post1") {
           title: "Heat alerts arrive too late for our neighborhood",
           selftext: "Volunteers rebuild the call list every time temperatures spike.",
           permalink: `/r/urbanplanning/comments/${id}/heat_alerts/`,
-          url: `https://www.reddit.com/r/urbanplanning/comments/${id}/heat_alerts/`,
+          url,
           score: 87,
           num_comments: 4,
           created_utc: 1_784_236_800,
@@ -83,6 +83,49 @@ describe("approved Reddit discovery search", () => {
     });
   });
 
+  it("classifies only HTTPS Reddit hosts as internal URLs", async () => {
+    const urls = [
+      "https://www.reddit.com/r/urbanplanning/comments/post1/heat_alerts/",
+      "https://old.reddit.com/r/urbanplanning/comments/post2/heat_alerts/",
+      "https://www.reddit.com.evil.example/post3",
+      "https://www.reddit.com@evil.example/post4",
+      "https://evil.example/www.reddit.com/post5",
+    ];
+    const listing = {
+      data: {
+        after: null,
+        children: urls.map((url, index) => ({
+          data: {
+            id: `post${index + 1}`,
+            name: `t3_post${index + 1}`,
+            title: "Heat alerts arrive too late for our neighborhood",
+            selftext: "Volunteers rebuild the call list every time temperatures spike.",
+            permalink: `/r/urbanplanning/comments/post${index + 1}/heat_alerts/`,
+            url,
+            score: 87,
+            num_comments: 4,
+            created_utc: 1_784_236_800,
+            subreddit: "urbanplanning",
+            over_18: false,
+          },
+        })),
+      },
+    };
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "url-token", expires_in: 3600 }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(listing), { status: 200 })));
+
+    const page = await searchApprovedRedditPage({ credentials, query: "heat workflow" });
+
+    expect(page.items.map(({ externalUrl }) => externalUrl)).toEqual([
+      null,
+      null,
+      urls[2],
+      urls[3],
+      urls[4],
+    ]);
+  });
+
   it("reuses the OAuth token and returns Reddit rate-limit metadata", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "cached-token", expires_in: 3600 }), { status: 200 }))
@@ -100,6 +143,17 @@ describe("approved Reddit discovery search", () => {
     expect(first.rateLimit).toEqual({ used: 2, remaining: 98, resetSeconds: 42 });
     expect(second.items[0]?.id).toBe("post2");
     expect(new Headers(fetchMock.mock.calls[2]?.[1]?.headers).get("authorization")).toBe("Bearer cached-token");
+  });
+
+  it("keeps lookalike Reddit hostnames as external URLs", async () => {
+    const externalUrl = "https://www.reddit.com.attacker.example/phishing";
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "host-token", expires_in: 3600 }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(postListing("post1", externalUrl)), { status: 200 })));
+
+    const result = await searchApprovedRedditPage({ credentials, query: "heat workflow" });
+
+    expect(result.items[0]?.externalUrl).toBe(externalUrl);
   });
 
   it("normalizes a bounded post thread and omits deleted comments", async () => {

@@ -133,6 +133,7 @@ export async function POST(request: Request, { params }: Context) {
         workspaceId: context.owner.workspaceId,
         projectId: previous.projectId,
         kind: previous.kind.toLowerCase() as "research" | "build" | "polish",
+        model: previous.model as "zai-org/glm-5.2" | "moonshotai/kimi-k2.7-code",
         ...(previous.specVersionId ? { specVersionId: previous.specVersionId } : {}),
         budgetCeilingMicros: Number(previous.budgetCeilingMicros),
         idempotencyKey: context.idempotencyKey,

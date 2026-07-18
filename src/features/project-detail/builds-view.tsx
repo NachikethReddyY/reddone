@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Icon } from "@/components/icons";
 import { Button, ButtonLink, EmptyState, Metric, Skeleton, StatusBadge, Surface } from "@/components/ui";
-import type { JsonValue } from "@/contracts";
+import { DEFAULT_WORKFLOW_MODEL, type JsonValue, WorkflowModelOptions, type WorkflowModel } from "@/contracts";
 import {
   useCancelRunMutation,
   useProjectQuery,
@@ -102,6 +102,7 @@ function RunDetails({ run, timeline, logLines }: { run: ProjectRunDetail; timeli
 export function BuildsView({ projectId }: { projectId: string }) {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
+  const [model, setModel] = useState<WorkflowModel>(DEFAULT_WORKFLOW_MODEL);
   const [now, setNow] = useState(() => Date.now());
   const projectQuery = useProjectQuery(projectId);
   const latestBuildId = selectedRunId ?? projectQuery.data?.runs.find((run) => run.kind === "build" || run.kind === "polish")?.id ?? null;
@@ -109,7 +110,7 @@ export function BuildsView({ projectId }: { projectId: string }) {
   const run = runQuery.data ?? null;
   const active = Boolean(run && ["queued", "running", "cancel_requested"].includes(run.status));
   const eventsQuery = useRunEventsQuery(latestBuildId, active);
-  const estimateQuery = useRunEstimateQuery(projectId, "build", Boolean(projectQuery.data?.spec?.status === "approved" && !latestBuildId));
+  const estimateQuery = useRunEstimateQuery(projectId, "build", model, Boolean(projectQuery.data?.spec?.status === "approved" && !latestBuildId));
   const startRun = useStartRunMutation(projectId);
   const cancelRun = useCancelRunMutation();
   const retryRun = useRetryRunMutation();
@@ -159,6 +160,7 @@ export function BuildsView({ projectId }: { projectId: string }) {
     try {
       const created = await startRun.mutateAsync({
         kind: "build",
+        model,
         projectVersion: currentProject.optimisticVersion,
         budgetCeilingMicros: currentProject.maxCostMicrosPerRun,
         specVersionId: currentProject.spec.id,
@@ -219,7 +221,7 @@ export function BuildsView({ projectId }: { projectId: string }) {
             <div><small>Sandbox policy</small><strong>Builder + fresh verifier</strong><span>No network, provider credentials, or project secrets · ephemeral auto-delete</span></div>
           </div>
           {estimateQuery.isError && <div className="inline-error" role="alert"><Icon name="warning" size={17} />{estimateQuery.error instanceof Error ? estimateQuery.error.message : "The build estimate is unavailable."}</div>}
-          <div className="preflight-action"><p>Starting reserves the exact credit quote and provider ceiling. Production remains unchanged until release approval.</p><Button kind="primary" icon="terminal" disabled={actionPending || estimateQuery.isPending} onClick={() => void startBuild()}>{startRun.isPending ? "Starting build…" : "Start build"}</Button></div>
+          <div className="preflight-action"><p>Starting reserves the exact credit quote and provider ceiling. Production remains unchanged until release approval.</p><label className="form-field compact-field"><span>Model for this build</span><select aria-label="Model for this build" value={model} onChange={(event) => setModel(event.target.value as WorkflowModel)}>{WorkflowModelOptions.map((option) => <option key={option.id} value={option.id}>{option.label} — {option.description}</option>)}</select></label><Button kind="primary" icon="terminal" disabled={actionPending || estimateQuery.isPending} onClick={() => void startBuild()}>{startRun.isPending ? "Starting build…" : "Start build"}</Button></div>
         </Surface>}
       </>}
 

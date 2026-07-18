@@ -13,7 +13,7 @@ RUN corepack enable && corepack prepare pnpm@11.11.0 --activate
 WORKDIR /workspace
 COPY templates/generated-next-app/ /workspace/
 RUN pnpm install --frozen-lockfile --ignore-scripts \
-    && pnpm audit --prod --audit-level high \
+    && pnpm audit --audit-level high \
     && pnpm exec playwright install --with-deps chromium
 
 COPY infrastructure/daytona/verify/ /opt/reddone/verify/

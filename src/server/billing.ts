@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomInt, randomUUID } from "node:crypto";
 
 import { Prisma, type BillingAccount, type BillingCheckoutSession } from "@prisma/client";
 import type Stripe from "stripe";
@@ -92,11 +92,10 @@ function serializable<T>(operation: (tx: Prisma.TransactionClient) => Promise<T>
   return withSerializableTransaction(getDb(), operation, { maxAttempts: 4, timeoutMs: 20_000 });
 }
 
-function integrationIdentifier(): string {
+export function createCheckoutIntegrationIdentifier(): string {
   const alphabet = "abcdefghijklmnopqrstuvwxyz";
-  const bytes = randomBytes(8);
   let suffix = "";
-  for (const byte of bytes) suffix += alphabet[byte % alphabet.length];
+  for (let index = 0; index < 8; index += 1) suffix += alphabet[randomInt(alphabet.length)];
   return `${CHECKOUT_IDENTIFIER_PREFIX}${suffix}`;
 }
 
@@ -386,7 +385,7 @@ async function createLocalCheckout(actor: CheckoutActor, item: BillingCatalogIte
         currency: item.currency,
         quotedAmountMinor: BigInt(item.amountMinor),
         quotedCredits: BigInt(item.credits),
-        integrationIdentifier: integrationIdentifier(),
+        integrationIdentifier: createCheckoutIntegrationIdentifier(),
         requestIdempotencyKey: actor.idempotencyKey,
       },
     });

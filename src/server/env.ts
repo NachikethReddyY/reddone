@@ -132,11 +132,20 @@ export const RuntimeEnvSchema = z
     PREVIEW_SIGNING_KEY: OptionalSecret,
     KIMI_API_KEY: OptionalString,
     MOONSHOT_API_KEY: OptionalString,
+    AIAND_API_KEY: OptionalString,
+    AIAND_BASE_URL: OptionalUrl,
     KIMI_RESEARCH_MODEL: z.string().trim().min(1).default("kimi-k2.6"),
     KIMI_BUILDER_MODEL: z.string().trim().min(1).default("kimi-k2.7-code"),
     KIMI_INPUT_COST_MICROS_PER_MILLION: OptionalCostRate,
     KIMI_OUTPUT_COST_MICROS_PER_MILLION: OptionalCostRate,
     DAYTONA_API_KEY: OptionalString,
+    DAYTONA_AGENT_SNAPSHOT: OptionalString,
+    PROJECT_WORKSPACE_ENABLED: EnvBoolean.default(false),
+    PROJECT_CONVERSATIONS_ENABLED: EnvBoolean.default(false),
+    PROJECT_CONVERSATION_AGENT_ENABLED: EnvBoolean.default(false),
+    PROJECT_CONVERSATION_MUTATIONS_ENABLED: EnvBoolean.default(false),
+    PROJECT_CONVERSATION_AUTOPILOT_ENABLED: EnvBoolean.default(false),
+    PROJECT_SECRET_IDEMPOTENCY_KEY: OptionalSecret,
     REDDIT_CLIENT_ID: OptionalString,
     REDDIT_CLIENT_SECRET: OptionalString,
     REDDIT_USER_AGENT: OptionalString,
@@ -521,4 +530,19 @@ export function isPublicMode(environment: Readonly<Record<string, string | undef
 
 export function isDatabaseConfigured(environment: Readonly<Record<string, string | undefined>> = process.env): boolean {
   return getRuntimeConfig(environment).database !== null;
+}
+
+/** Progressive conversation controls are intentionally fail-closed and hierarchical. */
+export function getConversationFeatureFlags(environment: Readonly<Record<string, string | undefined>> = process.env) {
+  const parsed = RuntimeEnvSchema.safeParse(environment);
+  if (!parsed.success) {
+    throw new EnvironmentConfigurationError(parsed.error.issues.map((issue) => `${issue.path.join(".") || "environment"}: ${issue.message}`));
+  }
+  const env = parsed.data;
+  const workspace = env.PROJECT_WORKSPACE_ENABLED;
+  const conversations = workspace && env.PROJECT_CONVERSATIONS_ENABLED;
+  const agent = conversations && env.PROJECT_CONVERSATION_AGENT_ENABLED && Boolean(env.DAYTONA_AGENT_SNAPSHOT);
+  const mutations = agent && env.PROJECT_CONVERSATION_MUTATIONS_ENABLED;
+  const autopilot = mutations && env.PROJECT_CONVERSATION_AUTOPILOT_ENABLED;
+  return { workspace, conversations, agent, mutations, autopilot, agentSnapshot: env.DAYTONA_AGENT_SNAPSHOT ?? null };
 }
