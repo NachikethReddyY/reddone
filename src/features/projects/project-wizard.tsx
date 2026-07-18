@@ -26,6 +26,11 @@ const demoDefaults = {
   market: "Independent service businesses with overdue invoices",
   context: "Repeated workflow pain that can become a focused web application with a human approval boundary.",
   communities: "r/freelance, r/smallbusiness, r/consulting",
+  subreddit: "freelance",
+  keywords: "late invoice",
+  redditSort: "relevance" as const,
+  redditTime: "year" as const,
+  agentCount: "4",
   limit: "50",
   maxCost: "12.00",
 };
@@ -36,6 +41,11 @@ const liveDefaults = {
   market: "",
   context: "",
   communities: "",
+  subreddit: "",
+  keywords: "",
+  redditSort: "relevance" as const,
+  redditTime: "year" as const,
+  agentCount: "4",
   limit: "",
   maxCost: "",
 };
@@ -43,7 +53,7 @@ const liveDefaults = {
 const maxImportBytes = 10 * 1024 * 1024;
 
 type Source = "fixture" | "import" | "live";
-type FieldName = "name" | "market" | "context" | "communities" | "limit" | "maxCost" | "file" | "workspaceTimeZone";
+type FieldName = "name" | "market" | "context" | "communities" | "subreddit" | "keywords" | "agentCount" | "limit" | "maxCost" | "file" | "workspaceTimeZone";
 type Draft = {
   version: 1;
   demoMode: boolean;
@@ -53,10 +63,17 @@ type Draft = {
   market: string;
   context: string;
   communities: string;
+  subreddit?: string;
+  keywords?: string;
+  redditSort?: "relevance" | "hot" | "top" | "new" | "comments";
+  redditTime?: "hour" | "day" | "week" | "month" | "year" | "all";
+  agentCount?: string;
   limit: string;
   maxCost: string;
   fileName: string;
 };
+type RedditSort = NonNullable<Draft["redditSort"]>;
+type RedditTime = NonNullable<Draft["redditTime"]>;
 
 function draftKey(demoMode: boolean) {
   return `reddone:project-wizard:v1:${demoMode ? "demo" : "live"}`;
@@ -73,6 +90,11 @@ function isDraft(value: unknown): value is Draft {
     && draft.step >= 1
     && draft.step <= 4
     && (draft.source === "fixture" || draft.source === "import" || draft.source === "live")
+    && (draft.subreddit === undefined || typeof draft.subreddit === "string")
+    && (draft.keywords === undefined || typeof draft.keywords === "string")
+    && (draft.redditSort === undefined || draft.redditSort === "relevance" || draft.redditSort === "hot" || draft.redditSort === "top" || draft.redditSort === "new" || draft.redditSort === "comments")
+    && (draft.redditTime === undefined || draft.redditTime === "hour" || draft.redditTime === "day" || draft.redditTime === "week" || draft.redditTime === "month" || draft.redditTime === "year" || draft.redditTime === "all")
+    && (draft.agentCount === undefined || typeof draft.agentCount === "string")
     && stringFields.every((field) => typeof draft[field] === "string");
 }
 
@@ -112,6 +134,11 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
   const [market, setMarket] = useState(defaults.market);
   const [context, setContext] = useState(defaults.context);
   const [communities, setCommunities] = useState(defaults.communities);
+  const [subreddit, setSubreddit] = useState(defaults.subreddit);
+  const [keywords, setKeywords] = useState(defaults.keywords);
+  const [redditSort, setRedditSort] = useState<RedditSort>(defaults.redditSort);
+  const [redditTime, setRedditTime] = useState<RedditTime>(defaults.redditTime);
+  const [agentCount, setAgentCount] = useState(defaults.agentCount);
   const [limit, setLimit] = useState(defaults.limit);
   const [maxCost, setMaxCost] = useState(defaults.maxCost);
   const [fileName, setFileName] = useState("");
@@ -124,7 +151,7 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
   const [draftNotice, setDraftNotice] = useState("");
 
   const workspaceTimeZone = workspaceQuery.data?.workspaceTimeZone ?? "";
-  const redditApproved = providerQuery.data?.providers.reddit === true;
+  const residentialScraperReady = providerQuery.data?.providers.redditWebScraper === true;
 
   const fieldErrors = useMemo<Partial<Record<FieldName, string>>>(() => {
     const next: Partial<Record<FieldName, string>> = {};
@@ -132,6 +159,7 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
     const trimmedMarket = market.trim();
     const trimmedContext = context.trim();
     const parsedLimit = Number(limit);
+    const parsedAgentCount = Number(agentCount);
     const parsedCost = Number(maxCost);
     if (trimmedName.length < 2) next.name = "Enter a project name with at least 2 characters.";
     else if (trimmedName.length > 120) next.name = "Keep the project name under 120 characters.";
@@ -139,7 +167,9 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
     else if (trimmedMarket.length > 120) next.market = "Keep the market description under 120 characters.";
     if (!trimmedContext) next.context = "Describe the problem shape worth researching.";
     else if (trimmedContext.length > 5_000) next.context = "Keep the research context under 5,000 characters.";
-    if (source === "live" && !communities.split(",").some((value) => value.trim())) next.communities = "Add at least one approved community label.";
+    if (source === "live" && !/^(?:r\/)?[A-Za-z0-9_]{2,21}$/.test(subreddit.trim())) next.subreddit = "Enter one valid subreddit, with or without r/.";
+    if (source === "live" && keywords.trim() && (keywords.trim().length < 2 || keywords.trim().length > 200)) next.keywords = "Keywords must be 2 to 200 characters when provided.";
+    if (source === "live" && (!Number.isInteger(parsedAgentCount) || parsedAgentCount < 1 || parsedAgentCount > 8)) next.agentCount = "Choose from 1 to 8 collection agents.";
     if (!Number.isInteger(parsedLimit) || parsedLimit < 1 || parsedLimit > 1_000) next.limit = "Choose a whole-number document limit from 1 to 1,000.";
     if (!Number.isFinite(parsedCost) || parsedCost <= 0) next.maxCost = "Set a positive provider-cost ceiling in USD.";
     if (decimalMicros(maxCost) > Number.MAX_SAFE_INTEGER) next.maxCost = "The provider-cost ceiling is too large.";
@@ -152,7 +182,7 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
       ? "Workspace timezone is unavailable. Retry before creating the project."
       : "Loading the workspace timezone…";
     return next;
-  }, [communities, context, importFile, limit, market, maxCost, name, source, workspaceQuery.isError, workspaceTimeZone]);
+  }, [agentCount, context, importFile, keywords, limit, market, maxCost, name, source, subreddit, workspaceQuery.isError, workspaceTimeZone]);
 
   const estimateInput = useMemo<ProjectDraftRunEstimateInput | null>(() => {
     if (step < 3 || fieldErrors.name || fieldErrors.market || fieldErrors.context || fieldErrors.limit || fieldErrors.maxCost) return null;
@@ -184,6 +214,11 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
         setMarket(parsed.market);
         setContext(parsed.context);
         setCommunities(parsed.communities);
+        setSubreddit(parsed.subreddit ?? defaults.subreddit);
+        setKeywords(parsed.keywords ?? defaults.keywords);
+        setRedditSort(parsed.redditSort ?? defaults.redditSort);
+        setRedditTime(parsed.redditTime ?? defaults.redditTime);
+        setAgentCount(parsed.agentCount ?? defaults.agentCount);
         setLimit(parsed.limit);
         setMaxCost(parsed.maxCost);
         setFileName(parsed.fileName);
@@ -202,13 +237,13 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
       }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [demoMode]);
+  }, [defaults.agentCount, defaults.keywords, defaults.redditSort, defaults.redditTime, defaults.subreddit, demoMode]);
 
   useEffect(() => {
     if (!hydrated || !dirty) return;
-    const draft: Draft = { version: 1, demoMode, step, source, name, market, context, communities, limit, maxCost, fileName };
+    const draft: Draft = { version: 1, demoMode, step, source, name, market, context, communities, subreddit, keywords, redditSort, redditTime, agentCount, limit, maxCost, fileName };
     window.sessionStorage.setItem(draftKey(demoMode), JSON.stringify(draft));
-  }, [communities, context, demoMode, dirty, fileName, hydrated, limit, market, maxCost, name, source, step]);
+  }, [agentCount, communities, context, demoMode, dirty, fileName, hydrated, keywords, limit, market, maxCost, name, redditSort, redditTime, source, step, subreddit]);
 
   useEffect(() => {
     const warnBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -229,7 +264,7 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
 
   function navigateSourceOptions(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (!(["ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp", "End", "Home"] as string[]).includes(event.key)) return;
-    const availableSources: Source[] = redditApproved ? ["fixture", "import", "live"] : ["fixture", "import"];
+    const availableSources: Source[] = residentialScraperReady ? ["fixture", "import", "live"] : ["fixture", "import"];
     const focusedSource = (event.target as HTMLElement).dataset.source as Source | undefined;
     const currentIndex = Math.max(0, availableSources.indexOf(focusedSource ?? source));
     const nextIndex = event.key === "Home"
@@ -251,7 +286,7 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
   function advance() {
     const stepFields: Record<number, FieldName[]> = {
       1: ["name", "market", "context"],
-      2: source === "import" ? ["file", "limit"] : source === "live" ? ["communities", "limit"] : ["limit"],
+      2: source === "import" ? ["file", "limit"] : source === "live" ? ["subreddit", "keywords", "agentCount", "limit"] : ["limit"],
       3: ["limit", "maxCost", "workspaceTimeZone"],
       4: [],
     };
@@ -263,11 +298,11 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
   }
 
   async function finish() {
-    const allFields: FieldName[] = ["name", "market", "context", "limit", "maxCost", "workspaceTimeZone", ...(source === "import" ? ["file" as const] : source === "live" ? ["communities" as const] : [])];
+    const allFields: FieldName[] = ["name", "market", "context", "limit", "maxCost", "workspaceTimeZone", ...(source === "import" ? ["file" as const] : source === "live" ? ["subreddit" as const, "keywords" as const, "agentCount" as const] : [])];
     reveal(allFields);
     const firstError = allFields.find((field) => fieldErrors[field]);
     if (firstError) {
-      setStep(["name", "market", "context"].includes(firstError) ? 1 : firstError === "file" || firstError === "communities" ? 2 : 3);
+      setStep(["name", "market", "context"].includes(firstError) ? 1 : ["file", "communities", "subreddit", "keywords", "agentCount"].includes(firstError) ? 2 : 3);
       setError(fieldErrors[firstError] ?? "Review the highlighted fields.");
       return;
     }
@@ -276,7 +311,9 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
     setError("");
     const sourceLabels = source === "import"
       ? [fileName]
-      : communities.split(",").map((item) => item.trim()).filter(Boolean);
+      : source === "live"
+        ? [`r/${subreddit.trim().replace(/^r\//i, "")}`]
+        : communities.split(",").map((item) => item.trim()).filter(Boolean);
     const input: ProjectCreateInput = {
       name: name.trim(),
       slug: slugFor(name),
@@ -285,6 +322,15 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
         researchContext: context.trim(),
         researchMode: source === "import" ? "authorized_import" : source === "live" ? "live_reddit" : "fixture",
         sourceLabels,
+        ...(source === "live" ? {
+          redditWebScrape: {
+            subreddit: subreddit.trim(),
+            ...(keywords.trim() ? { keywords: keywords.trim() } : {}),
+            sort: redditSort,
+            time: redditTime,
+            agentCount: Number(agentCount),
+          },
+        } : {}),
         maxDocumentsPerRun: Number(limit),
         maxCostMicrosPerRun: decimalMicros(maxCost),
         workspaceTimeZone,
@@ -358,11 +404,11 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
 
         {step === 2 && (
           <div className="wizard-section reveal">
-            <div className="wizard-heading"><span className="step-number">02 / 04</span><h2>Choose where the evidence comes from.</h2><p>Fixture data and authorized imports work now. Live Reddit remains locked until written authorization is recorded.</p></div>
+            <div className="wizard-heading"><span className="step-number">02 / 04</span><h2>Choose where the evidence comes from.</h2><p>Fixture data and authorized imports work now. Live Reddit collection stays server-side, approval-gated, and routed through Oxylabs residential proxy access.</p></div>
             <div className="source-options" role="radiogroup" aria-label="Research source" onKeyDown={navigateSourceOptions}>
               <button aria-checked={source === "fixture"} className={source === "fixture" ? "is-selected" : ""} data-source="fixture" role="radio" tabIndex={source === "fixture" ? 0 : -1} onClick={() => edit(() => setSource("fixture"))} type="button"><span className="source-radio" /><Icon name="database" size={23} /><strong>Curated fixture</strong><p>Prove the workflow with attributable, anonymized evidence. Demo values are prefilled only in demo mode.</p><SourceBadge mode="fixture" /></button>
               <button aria-checked={source === "import"} className={source === "import" ? "is-selected" : ""} data-source="import" role="radio" tabIndex={source === "import" ? 0 : -1} onClick={() => edit(() => setSource("import"))} type="button"><span className="source-radio" /><Icon name="file" size={23} /><strong>Authorized JSON import</strong><p>Validate and ingest a dataset you have permission to process.</p><SourceBadge mode="import" /></button>
-              <button aria-checked={source === "live"} aria-disabled={!redditApproved} className={`${source === "live" ? "is-selected" : ""} ${redditApproved ? "" : "is-disabled"}`} data-source="live" disabled={!redditApproved} role="radio" tabIndex={source === "live" && redditApproved ? 0 : -1} onClick={() => redditApproved && edit(() => setSource("live"))} type="button"><span className="source-radio" /><Icon name={redditApproved ? "activity" : "lock"} size={23} /><strong>Live Reddit API</strong><p>{redditApproved ? "Use only the approved OAuth API connection and recorded authorization." : "Requires recorded API and commercial authorization."}</p>{redditApproved ? <SourceBadge mode="live" /> : <StatusBadge tone="neutral">Locked</StatusBadge>}</button>
+              <button aria-checked={source === "live"} aria-disabled={!residentialScraperReady} className={`${source === "live" ? "is-selected" : ""} ${residentialScraperReady ? "" : "is-disabled"}`} data-source="live" disabled={!residentialScraperReady} role="radio" tabIndex={source === "live" && residentialScraperReady ? 0 : -1} onClick={() => residentialScraperReady && edit(() => setSource("live"))} type="button"><span className="source-radio" /><Icon name={residentialScraperReady ? "activity" : "lock"} size={23} /><strong>Live Reddit web scrape</strong><p>{residentialScraperReady ? "Use the approval-gated Oxylabs residential collector for one selected subreddit." : "Requires Oxylabs credentials and recorded Reddit authorization."}</p>{residentialScraperReady ? <SourceBadge mode="live" /> : <StatusBadge tone="neutral">Locked</StatusBadge>}</button>
             </div>
             {source === "import" ? (
               <><label className={`file-drop ${fileName ? "has-file" : ""}`}>
@@ -370,9 +416,22 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
                 <Icon name={importFile && !fieldErrors.file ? "check" : "download"} size={24} />
                 <span><strong>{fileName || "Choose an authorized JSON file"}</strong><small>{fileName && !importFile ? "Choose this file again; browsers do not restore file access." : importFile && !fieldErrors.file ? "Ready for schema and safety validation" : "Maximum 10 MB · JSON only · no remote fetch instructions"}</small></span>
               </label>{errorFor("file") && <small className="field-error standalone-error" id="project-file-error">{errorFor("file")}</small>}</>
+            ) : source === "live" ? (
+              <div className="field-stack">
+                <div className="field-grid two-col">
+                  <label className="form-field"><span>Subreddit</span><input aria-label="Subreddit" aria-describedby="project-subreddit-help project-subreddit-error" aria-invalid={Boolean(errorFor("subreddit"))} value={subreddit} onBlur={() => reveal(["subreddit"])} onChange={(event) => edit(() => setSubreddit(event.target.value))} placeholder="e.g. r/freelance" /><small id="project-subreddit-help">One public community per research run. The server scopes requests to this subreddit.</small>{errorFor("subreddit") && <small className="field-error" id="project-subreddit-error">{errorFor("subreddit")}</small>}</label>
+                  <label className="form-field"><span>Keywords <small>(optional)</small></span><input aria-label="Keywords" aria-describedby="project-keywords-help project-keywords-error" aria-invalid={Boolean(errorFor("keywords"))} value={keywords} onBlur={() => reveal(["keywords"])} onChange={(event) => edit(() => setKeywords(event.target.value))} placeholder="e.g. late invoice follow-up" /><small id="project-keywords-help">Narrows the subreddit search. Leave empty to collect the selected subreddit listing.</small>{errorFor("keywords") && <small className="field-error" id="project-keywords-error">{errorFor("keywords")}</small>}</label>
+                </div>
+                <div className="field-grid three-col">
+                  <label className="form-field"><span>Sort posts by</span><select aria-label="Sort posts by" onChange={(event) => edit(() => setRedditSort(event.target.value as RedditSort))} value={redditSort}><option value="relevance">Relevance</option><option value="hot">Hot</option><option value="top">Top</option><option value="new">New</option><option value="comments">Comments</option></select><small>Relevance and comments use Reddit search when keywords are entered.</small></label>
+                  <label className="form-field"><span>Time frame</span><select aria-label="Time frame" onChange={(event) => edit(() => setRedditTime(event.target.value as RedditTime))} value={redditTime}><option value="hour">Past hour</option><option value="day">Past day</option><option value="week">Past week</option><option value="month">Past month</option><option value="year">Past year</option><option value="all">All time</option></select><small>Posts are checked against this range after collection.</small></label>
+                  <label className="form-field"><span>Collection agents</span><input aria-label="Collection agents" aria-describedby="project-agent-count-help project-agent-count-error" aria-invalid={Boolean(errorFor("agentCount"))} inputMode="numeric" min="1" max="8" onBlur={() => reveal(["agentCount"])} onChange={(event) => edit(() => setAgentCount(event.target.value))} type="number" value={agentCount} /><small id="project-agent-count-help">Bounded workers independently re-read assigned posts through the proxy.</small>{errorFor("agentCount") && <small className="field-error" id="project-agent-count-error">{errorFor("agentCount")}</small>}</label>
+                </div>
+                <label className="form-field"><span>Research document limit</span><input aria-label="Research document limit" aria-describedby="project-limit-error" aria-invalid={Boolean(errorFor("limit"))} inputMode="numeric" type="number" min="1" max="1000" value={limit} onBlur={() => reveal(["limit"])} onChange={(event) => edit(() => setLimit(event.target.value))} /><small>Each collected document is an attributable Reddit post. The limit also bounds proxy requests.</small>{errorFor("limit") && <small className="field-error" id="project-limit-error">{errorFor("limit")}</small>}</label>
+              </div>
             ) : (
               <div className="field-grid two-col">
-                <label className="form-field"><span>Communities represented</span><input aria-label="Communities represented" aria-describedby="project-communities-help project-communities-error" aria-invalid={Boolean(errorFor("communities"))} value={communities} onBlur={() => reveal(["communities"])} onChange={(event) => edit(() => setCommunities(event.target.value))} placeholder={source === "live" ? "Required approved labels" : "Optional attribution labels"} /><small id="project-communities-help">Labels are retained for attribution.</small>{errorFor("communities") && <small className="field-error" id="project-communities-error">{errorFor("communities")}</small>}</label>
+                <label className="form-field"><span>Communities represented</span><input aria-label="Communities represented" aria-describedby="project-communities-help project-communities-error" aria-invalid={Boolean(errorFor("communities"))} value={communities} onBlur={() => reveal(["communities"])} onChange={(event) => edit(() => setCommunities(event.target.value))} placeholder="Optional attribution labels" /><small id="project-communities-help">Labels are retained for attribution.</small>{errorFor("communities") && <small className="field-error" id="project-communities-error">{errorFor("communities")}</small>}</label>
                 <label className="form-field"><span>Research document limit</span><input aria-label="Research document limit" aria-describedby="project-limit-error" aria-invalid={Boolean(errorFor("limit"))} inputMode="numeric" type="number" min="1" max="1000" value={limit} onBlur={() => reveal(["limit"])} onChange={(event) => edit(() => setLimit(event.target.value))} />{errorFor("limit") && <small className="field-error" id="project-limit-error">{errorFor("limit")}</small>}</label>
               </div>
             )}
@@ -416,7 +475,8 @@ export function ProjectWizard({ demoMode }: { demoMode: boolean }) {
               <dl>
                 <div><dt>Source</dt><dd><SourceBadge mode={source} /></dd></div>
                 <div><dt>Research context</dt><dd>{context}</dd></div>
-                <div><dt>Source labels</dt><dd>{source === "import" ? fileName : communities || "No optional labels"}</dd></div>
+                <div><dt>Source labels</dt><dd>{source === "import" ? fileName : source === "live" ? `r/${subreddit.trim().replace(/^r\//i, "")} · ${keywords.trim() || "all posts"} · ${redditSort} · ${redditTime}` : communities || "No optional labels"}</dd></div>
+                {source === "live" && <div><dt>Residential collection</dt><dd>{agentCount} bounded agent{agentCount === "1" ? "" : "s"} through Oxylabs</dd></div>}
                 <div><dt>Research capacity</dt><dd>{limit} documents per run</dd></div>
                 <div><dt>Provider hard stop</dt><dd>{formatMicros(decimalMicros(maxCost))} USD per run</dd></div>
                 <div><dt>Customer charge</dt><dd>{fixedResearchCredits} credits for research · fixed product pricing</dd></div>

@@ -37,6 +37,7 @@ export function createOAuthState(provider: OAuthState["provider"], returnTo = "/
 export function verifyOAuthState(value: string, expectedProvider: OAuthState["provider"]) {
   const [encoded, suppliedSignature, extra] = value.split(".");
   if (!encoded || !suppliedSignature || extra) throw new Error("Invalid OAuth state.");
+  // codeql[js/insufficient-password-hash]: HMAC-SHA-256 authenticates opaque OAuth state, not password data.
   const expectedSignature = createHmac("sha256", signingKey()).update(encoded).digest("base64url");
   const supplied = Buffer.from(suppliedSignature);
   const expected = Buffer.from(expectedSignature);

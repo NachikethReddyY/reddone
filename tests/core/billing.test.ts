@@ -12,11 +12,14 @@ import {
 import {
   buildStripeBillingPortalSessionParams,
   buildStripeCheckoutSessionParams,
+  createCheckoutIntegrationIdentifier,
   isNewerStripeEvent,
   projectedCheckoutStatus,
   shouldGrantPurchasedCredits,
 } from "@/server/billing";
 import { EnvironmentConfigurationError, getRuntimeConfig } from "@/server/env";
+
+import { stripeTestCredentials } from "../helpers/stripe-test-credentials";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -134,6 +137,10 @@ describe("approved Stripe Billing catalog", () => {
     })).toBe("FAILED");
   });
 
+  it("creates uniformly selected lowercase Checkout integration identifiers", () => {
+    expect(createCheckoutIntegrationIdentifier()).toMatch(/^reddone_checkout_[a-z]{8}$/);
+  });
+
   it("orders equal-second Stripe events deterministically and rejects stale projections", () => {
     const lastCreatedAt = new Date(1_784_000_000_000);
     expect(isNewerStripeEvent(lastCreatedAt, "evt_b", 1_784_000_001, "evt_a")).toBe(true);
@@ -169,9 +176,9 @@ describe("approved Stripe Billing catalog", () => {
 
 describe("Stripe environment safety", () => {
   it("rejects test/live key mismatches and browser-exposed server secrets", () => {
-    expect(() => getRuntimeConfig({ STRIPE_MODE: "live", STRIPE_SECRET_KEY: "sk_test_abcdefghijklmnopqrstuvwxyz" }))
+    expect(() => getRuntimeConfig({ STRIPE_MODE: "live", STRIPE_SECRET_KEY: stripeTestCredentials.secretKey }))
       .toThrow(EnvironmentConfigurationError);
-    expect(() => getRuntimeConfig({ NEXT_PUBLIC_STRIPE_SECRET_KEY: "sk_test_abcdefghijklmnopqrstuvwxyz" }))
+    expect(() => getRuntimeConfig({ NEXT_PUBLIC_STRIPE_SECRET_KEY: stripeTestCredentials.secretKey }))
       .toThrow(EnvironmentConfigurationError);
   });
 
@@ -181,8 +188,8 @@ describe("Stripe environment safety", () => {
       BILLING_CHECKOUT_ENABLED: "true",
       DATABASE_URL: "postgresql://user:pass@localhost:5432/reddone",
       STRIPE_MODE: "test",
-      STRIPE_SECRET_KEY: "rk_test_abcdefghijklmnopqrstuvwxyz",
-      STRIPE_WEBHOOK_SECRET: "whsec_abcdefghijklmnopqrstuvwxyz",
+      STRIPE_SECRET_KEY: stripeTestCredentials.secretKey,
+      STRIPE_WEBHOOK_SECRET: stripeTestCredentials.webhookSecret,
     };
     expect(() => getRuntimeConfig(base)).toThrow(EnvironmentConfigurationError);
     expect(getRuntimeConfig({

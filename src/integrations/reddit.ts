@@ -190,7 +190,8 @@ function rateLimitFrom(headers: Headers): RedditRateLimit {
 function isRedditUrl(value: string): boolean {
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && (url.hostname === "reddit.com" || url.hostname.endsWith(".reddit.com"));
+    const hostname = url.hostname.toLowerCase().replace(/\.$/, "");
+    return url.protocol === "https:" && (hostname === "reddit.com" || hostname.endsWith(".reddit.com"));
   } catch {
     return false;
   }

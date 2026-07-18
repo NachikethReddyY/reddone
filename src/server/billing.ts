@@ -92,10 +92,10 @@ function serializable<T>(operation: (tx: Prisma.TransactionClient) => Promise<T>
   return withSerializableTransaction(getDb(), operation, { maxAttempts: 4, timeoutMs: 20_000 });
 }
 
-function integrationIdentifier(): string {
+export function createCheckoutIntegrationIdentifier(): string {
   const alphabet = "abcdefghijklmnopqrstuvwxyz";
   let suffix = "";
-  for (let index = 0; index < 8; index += 1) suffix += alphabet.charAt(randomInt(alphabet.length));
+  for (let index = 0; index < 8; index += 1) suffix += alphabet[randomInt(alphabet.length)];
   return `${CHECKOUT_IDENTIFIER_PREFIX}${suffix}`;
 }
 
@@ -385,7 +385,7 @@ async function createLocalCheckout(actor: CheckoutActor, item: BillingCatalogIte
         currency: item.currency,
         quotedAmountMinor: BigInt(item.amountMinor),
         quotedCredits: BigInt(item.credits),
-        integrationIdentifier: integrationIdentifier(),
+        integrationIdentifier: createCheckoutIntegrationIdentifier(),
         requestIdempotencyKey: actor.idempotencyKey,
       },
     });
