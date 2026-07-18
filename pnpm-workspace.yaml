@@ -36,9 +36,10 @@ minimumReleaseAgeExclude:
   - '@aws-sdk/client-s3@3.1085.0'
   - '@aws-sdk/credential-providers@3.1085.0'
   - '@aws-sdk/s3-request-presigner@3.1085.0'
-  - '@daytona/api-client@0.196.0'
-  - '@daytona/sdk@0.196.0'
-  - '@daytona/toolbox-api-client@0.196.0'
+  - '@daytona/analytics-api-client@0.199.0'
+  - '@daytona/api-client@0.199.0'
+  - '@daytona/sdk@0.199.0'
+  - '@daytona/toolbox-api-client@0.199.0'
 
 onlyBuiltDependencies:
   - "@prisma/engines"
