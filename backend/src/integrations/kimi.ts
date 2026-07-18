@@ -61,11 +61,16 @@ export function extractKimiUsageSample(
 }
 
 const DEFAULT_KIMI_BASE_URL = "https://api.moonshot.ai/v1";
+const AIAND_BASE_URL = "https://api.aiand.com/v1";
 const TOKEN_ROUTER_ORIGIN = "https://api.tokenrouter.com";
+
+export function inferenceBaseUrl() {
+  return process.env.AIAND_BASE_URL ?? (process.env.AIAND_API_KEY ? AIAND_BASE_URL : process.env.KIMI_BASE_URL ?? DEFAULT_KIMI_BASE_URL);
+}
 
 function usesTokenRouter() {
   try {
-    return new URL(process.env.KIMI_BASE_URL ?? DEFAULT_KIMI_BASE_URL).origin === TOKEN_ROUTER_ORIGIN;
+    return new URL(inferenceBaseUrl()).origin === TOKEN_ROUTER_ORIGIN;
   } catch {
     return false;
   }
@@ -149,7 +154,7 @@ export interface ResearchInputDocument {
 function client(apiKey: string) {
   return new OpenAI({
     apiKey,
-    baseURL: process.env.KIMI_BASE_URL ?? DEFAULT_KIMI_BASE_URL,
+    baseURL: inferenceBaseUrl(),
     timeout: 60_000,
     maxRetries: 2,
   });
@@ -166,7 +171,7 @@ export async function synthesizeResearch(input: {
   researchContext?: string;
   onUsage?: KimiUsageSink;
 }): Promise<ResearchSynthesis> {
-  const model = process.env.KIMI_RESEARCH_MODEL ?? "kimi-k2.6";
+  const model = process.env.KIMI_RESEARCH_MODEL ?? "moonshotai/kimi-k2.6";
   const payload = input.documents.slice(0, 100).map((document) => ({
     id: document.id,
     title: document.title.slice(0, 300),
@@ -234,7 +239,7 @@ export async function testKimiConnection(apiKey: string) {
   const startedAt = Date.now();
   try {
     const kimiClient = client(apiKey);
-    const researchModel = process.env.KIMI_RESEARCH_MODEL ?? "kimi-k2.6";
+    const researchModel = process.env.KIMI_RESEARCH_MODEL ?? "moonshotai/kimi-k2.6";
     const structured = await kimiClient.chat.completions.create({
       model: researchModel,
       temperature: getKimiTemperature(0),
@@ -253,7 +258,7 @@ export async function testKimiConnection(apiKey: string) {
     if (typeof structuredContent !== "string") throw new Error("Provider returned no structured probe result.");
     connectionProbeSchema.parse(JSON.parse(structuredContent));
 
-    const builderModel = process.env.KIMI_BUILDER_MODEL ?? "kimi-k2.7-code";
+    const builderModel = process.env.KIMI_BUILDER_MODEL ?? "moonshotai/kimi-k2.7-code";
     const toolCompletion = await kimiClient.chat.completions.create({
       model: builderModel,
       temperature: getKimiTemperature(0),
@@ -333,7 +338,7 @@ export async function generateProductSpec(input: {
   onUsage?: KimiUsageSink;
 }): Promise<ProductSpec> {
   try {
-    const model = process.env.KIMI_RESEARCH_MODEL ?? "kimi-k2.6";
+    const model = process.env.KIMI_RESEARCH_MODEL ?? "moonshotai/kimi-k2.6";
     const completion = await client(input.apiKey).chat.completions.create({
       model,
       temperature: getKimiTemperature(0.1),
@@ -385,7 +390,7 @@ export async function improveProductSpec(input: {
   }));
   if (evidence.length === 0) throw new IntegrationError("invalid_response", "A polish proposal requires incremental evidence.", false, 422);
   try {
-    const model = process.env.KIMI_RESEARCH_MODEL ?? "kimi-k2.6";
+    const model = process.env.KIMI_RESEARCH_MODEL ?? "moonshotai/kimi-k2.6";
     const completion = await client(input.apiKey).chat.completions.create({
       model,
       temperature: getKimiTemperature(0.1),

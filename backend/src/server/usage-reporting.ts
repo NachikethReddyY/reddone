@@ -218,7 +218,7 @@ export function getDemoUsageReport(query: ResolvedUsageQuery) {
     .filter((run) => !query.runKind || run.kind === query.runKind)
     .map((run) => {
       const project = getProject(run.projectId)!;
-      const model = run.kind === "build" || run.kind === "polish" ? "kimi-k2.7-code" : "kimi-k2.6";
+      const model = run.kind === "build" || run.kind === "polish" ? "moonshotai/kimi-k2.7-code" : "moonshotai/kimi-k2.6";
       const operation = `simulated_${run.kind}`;
       const turns = Math.max(run.budget.modelTurns, 1);
       return {
@@ -309,7 +309,7 @@ export function serializeDemoRunUsage(run: {
   startedAt: string;
   budget: { spentCents: number; modelTurns: number };
 }) {
-  const model = run.kind === "build" || run.kind === "polish" ? "kimi-k2.7-code" : "kimi-k2.6";
+  const model = run.kind === "build" || run.kind === "polish" ? "moonshotai/kimi-k2.7-code" : "moonshotai/kimi-k2.6";
   const turns = Math.max(run.budget.modelTurns, 1);
   return serializeRunUsage([{
     id: `${run.id}:simulated-usage`,

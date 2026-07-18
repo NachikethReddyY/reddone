@@ -243,8 +243,8 @@ export async function estimateProjectRun(input: {
   if (!project) throw new Error("Project not found.");
   const config = ProjectConfigSchema.parse(project.config);
   const model = input.model ?? (input.kind === "research"
-    ? process.env.KIMI_RESEARCH_MODEL ?? "kimi-k2.6"
-    : process.env.KIMI_BUILDER_MODEL ?? "kimi-k2.7-code");
+    ? process.env.KIMI_RESEARCH_MODEL ?? "moonshotai/kimi-k2.6"
+    : process.env.KIMI_BUILDER_MODEL ?? "moonshotai/kimi-k2.7-code");
   const runKind = input.kind.toUpperCase() as "RESEARCH" | "BUILD" | "POLISH";
   const runQuery = async (projectId?: string) => aggregateRunSamples(await db.workflowRun.findMany({
     where: {
@@ -335,7 +335,7 @@ export function estimateDemoProjectRun(input: {
 }) {
   const project = getProject(normalizeDemoProjectId(input.projectId));
   if (!project) throw new Error("Project not found.");
-  const model = input.model ?? (input.kind === "research" ? "kimi-k2.6" : "kimi-k2.7-code");
+  const model = input.model ?? (input.kind === "research" ? "moonshotai/kimi-k2.6" : "moonshotai/kimi-k2.7-code");
   const coldStart = coldStartScenarios({
     kind: input.kind,
     project: {

@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const owner = await assertOwnerRequest(request);
     assertSameOrigin(request);
     const body = await parseJson(request, ProjectDraftRunEstimateInputSchema);
-    const model = body.model ?? process.env.KIMI_RESEARCH_MODEL ?? "kimi-k2.6";
+    const model = body.model ?? process.env.KIMI_RESEARCH_MODEL ?? "moonshotai/kimi-k2.6";
     let workspaceSamples: TokenSample[] = [];
 
     if (!isDemoMode()) {
