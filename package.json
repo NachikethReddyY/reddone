@@ -48,7 +48,7 @@
     "google-auth-library": "10.5.0",
     "lucide-react": "0.552.0",
     "next": "16.2.10",
-    "openai": "6.46.0",
+    "openai": "6.48.0",
     "pg": "8.16.3",
     "react": "19.2.7",
     "react-dom": "19.2.7",
